@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./keazy-backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mlservice
+      - mongodb
+
+  mlservice:
+    build: ./ml-service
+    ports:
+      - "5001:5001"
+
+  mongodb:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

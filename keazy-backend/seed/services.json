@@ -1,0 +1,6 @@
+[
+  { "service_id": "S001", "name": "electrician", "synonyms": ["electrical", "bijli wala", "wiring"], "tags": ["home"], "enabled": true },
+  { "service_id": "S002", "name": "plumber", "synonyms": ["pipe repair", "tap leak", "nali"], "tags": ["home"], "enabled": true },
+  { "service_id": "S003", "name": "tutor", "synonyms": ["tuition", "teacher", "coaching"], "tags": ["education"], "enabled": true },
+  { "service_id": "S004", "name": "salon", "synonyms": ["beautician", "haircut"], "tags": ["personal"], "enabled": true }
+]

@@ -1,0 +1,6 @@
+{
+  "electrician": ["bijli wala", "fan repair", "light kaam", "wiring"],
+  "plumber": ["nal tut gaya", "pipe leak", "paani wala", "tap repair"],
+  "tutor": ["maths tuition", "home teacher", "study help", "coaching"],
+  "salon": ["beauty parlour", "hair cut", "facial", "makeup"]
+}

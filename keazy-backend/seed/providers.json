@@ -1,0 +1,42 @@
+[
+  {
+    "provider_id": "P001",
+    "name": "Ravi Electric Works",
+    "service": "electrician",
+    "city": "Aligarh",
+    "area": "Mangal Vihar",
+    "rating": 4.7,
+    "verified": true,
+    "available_now": true
+  },
+  {
+    "provider_id": "P002",
+    "name": "Sharma Plumbing Services",
+    "service": "plumber",
+    "city": "Aligarh",
+    "area": "Railway Road",
+    "rating": 4.5,
+    "verified": true,
+    "available_now": false
+  },
+  {
+    "provider_id": "P003",
+    "name": "Gupta Home Tutors",
+    "service": "tutor",
+    "city": "Delhi",
+    "area": "Lajpat Nagar",
+    "rating": 4.8,
+    "verified": true,
+    "available_now": true
+  },
+  {
+    "provider_id": "P004",
+    "name": "Meena Beauty Salon",
+    "service": "salon",
+    "city": "Lucknow",
+    "area": "Hazratganj",
+    "rating": 4.6,
+    "verified": false,
+    "available_now": true
+  }
+]

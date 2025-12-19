@@ -1,0 +1,26 @@
+{
+  "name": "keazy-backend",
+  "version": "1.0.0",
+  "description": "Keazy Phase 0 AI backend: text-to-match pipeline",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed": "node seed/seed.js"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "compromise": "^14.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "joi": "^17.12.0",
+    "mongoose": "^8.6.0",
+    "morgan": "^1.10.0",
+    "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
