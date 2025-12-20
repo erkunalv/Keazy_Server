@@ -23,6 +23,8 @@ git clone https://github.com/<your-username>/Keazy_Server.git
 cd Keazy_Server
 ```
 
+**Note: It is mandatory to create branches from Dev branch, only final Dev can merge to main, rest all work and releases originate and merge to Dev branch.**
+
 ### 2. Backend (Node.js)
 ```
 cd keazy-backend
