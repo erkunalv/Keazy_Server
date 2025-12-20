@@ -1,36 +1,13 @@
 {
   "info": {
-    "name": "Keazy Backend API",
-    "_postman_id": "12345678-abcd-efgh-ijkl-1234567890ab",
-    "description": "Postman collection to test Keazy backend and ML microservice",
+    "name": "Keazy Testing Collection",
+    "_postman_id": "12345678-abcd-efgh-ijkl-987654321000",
+    "description": "Postman collection for testing Keazy backend + ML microservice",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Classify - Cobbler",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"query_text\": \"fix shoes\",\n  \"urgency\": \"high\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:3000/classify",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["classify"]
-        }
-      }
-    },
-    {
-      "name": "Classify - Plumber",
+      "name": "Flask Predict",
       "request": {
         "method": "POST",
         "header": [
@@ -44,16 +21,16 @@
           "raw": "{\n  \"query_text\": \"install tap\",\n  \"urgency\": \"normal\"\n}"
         },
         "url": {
-          "raw": "http://localhost:3000/classify",
+          "raw": "http://127.0.0.1:5000/predict",
           "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["classify"]
+          "host": ["127.0.0.1"],
+          "port": "5000",
+          "path": ["predict"]
         }
       }
     },
     {
-      "name": "Classify - Electrician",
+      "name": "Node Classify",
       "request": {
         "method": "POST",
         "header": [
@@ -64,39 +41,43 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"query_text\": \"repair wiring\",\n  \"urgency\": \"high\"\n}"
+          "raw": "{\n  \"query_text\": \"install tap\",\n  \"urgency\": \"normal\"\n}"
         },
         "url": {
-          "raw": "http://localhost:3000/classify",
+          "raw": "http://127.0.0.1:3000/classify",
           "protocol": "http",
-          "host": ["localhost"],
+          "host": ["127.0.0.1"],
           "port": "3000",
           "path": ["classify"]
         }
       }
     },
     {
-      "name": "Classify - Pharmacy",
+      "name": "Node Health Check",
       "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"query_text\": \"buy medicine\",\n  \"urgency\": \"low\"\n}"
-        },
+        "method": "GET",
         "url": {
-          "raw": "http://localhost:3000/classify",
+          "raw": "http://127.0.0.1:3000/health",
           "protocol": "http",
-          "host": ["localhost"],
+          "host": ["127.0.0.1"],
           "port": "3000",
-          "path": ["classify"]
+          "path": ["health"]
         }
       }
+    },
+    {
+      "name": "MongoDB Logs (Mock)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://127.0.0.1:3000/dashboard/logs",
+          "protocol": "http",
+          "host": ["127.0.0.1"],
+          "port": "3000",
+          "path": ["dashboard", "logs"]
+        }
+      },
+      "description": "This route will be wired later to fetch logs from MongoDB"
     }
   ]
 }
