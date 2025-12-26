@@ -1,39 +1,47 @@
 const express = require("express");
 const router = express.Router();
 const { getIntentPrediction } = require("../services/intentModel");
-const { MongoClient } = require("mongodb");
+const Query = require("../models/query");
 
-// MongoDB connection
-const uri = "mongodb://localhost:27017";
-const client = new MongoClient(uri);
-const db = client.db("keazy");
-const logs = db.collection("query_logs");
-
-// POST /classify
+// POST /classify → classify a query using ML model
 router.post("/", async (req, res) => {
   try {
-    const { query_text, urgency } = req.body;
+    const { user_id, query_text, urgency = "normal", location } = req.body;
+
+    if (!query_text || typeof query_text !== "string") {
+      return res.status(400).json({ error: "query_text is required" });
+    }
+    if (!user_id) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
 
     // Call ML microservice
     const mlResult = await getIntentPrediction(query_text, urgency);
 
     // Build log entry
     const logEntry = {
+      user_id,
       query_text,
       urgency,
-      predicted_service: mlResult.predicted_service,
+      normalized_service: mlResult.predicted_service,
       confidence: mlResult.confidence,
-      created_at: new Date()
+      approved_for_training: true,
+      location,
+      timestamp: new Date()
     };
 
-    // Save to MongoDB
-    await logs.insertOne(logEntry);
+    // Save to MongoDB via Mongoose
+    const created = await Query.create(logEntry);
 
     // Respond to client
-    res.json(logEntry);
+    res.json({
+      predicted_service: mlResult.predicted_service,
+      confidence: mlResult.confidence,
+      log_id: created._id
+    });
   } catch (err) {
     console.error("Error in /classify route:", err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 

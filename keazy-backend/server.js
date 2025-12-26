@@ -1,63 +1,44 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const { MongoClient } = require("mongodb");
-const { getIntentPrediction } = require("./services/intentModel");
+// server.js
+require('dotenv').config();
+const connectDB = require('./db/connect');
+connectDB();
+
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+
+// Import routes
+const providersRoutes = require('./routes/providers');
+const dashboardRoutes = require('./routes/dashboard');
+const queryRoutes = require('./routes/query');
+const classifyRoutes = require('./routes/classify');
+const adminRoutes = require('./routes/admin');
+const eventsRoutes = require('./routes/events');
+const jobsRoutes = require('./routes/jobs');
+const healthRoutes = require('./routes/health');
 
 const app = express();
+
+// Middleware
+app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(bodyParser.json());
 
-const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017";
-const DB_NAME = process.env.DB_NAME || "keazy";
+// Mount routes
+app.use('/providers', providersRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/query', queryRoutes);
+app.use('/classify', classifyRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/events', eventsRoutes);
+app.use('/jobs', jobsRoutes);
+app.use('/health', healthRoutes);
 
-let db;
-async function initDb() {
-  const client = new MongoClient(MONGO_URL);
-  await client.connect();
-  db = client.db(DB_NAME);
-  console.log("✅ Connected to MongoDB");
-}
-
-app.post("/classify", async (req, res) => {
-  try {
-    const { query_text, urgency = "normal" } = req.body;
-
-    // Basic validation
-    if (!query_text || typeof query_text !== "string") {
-      return res.status(400).json({ error: "query_text is required" });
-    }
-
-    // Call ML microservice
-    const { predicted_service, confidence } = await getIntentPrediction(query_text, urgency);
-
-    // Log to MongoDB
-    const logDoc = {
-      query_text,
-      urgency,
-      predicted_service,
-      confidence,
-      approved_for_training: true, // default; later flip via admin
-      created_at: new Date()
-    };
-    await db.collection("query_logs").insertOne(logDoc);
-
-    // Respond to client
-    res.json({ predicted_service, confidence });
-  } catch (err) {
-    if (err.message === "ML_SERVICE_UNAVAILABLE") {
-      return res.status(503).json({ error: "ML service unavailable" });
-    }
-    console.error("Error in /classify:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
-// Optional: health check
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
-
+// Start server
 const PORT = process.env.PORT || 3000;
-initDb()
-  .then(() => app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`)))
-  .catch(err => {
-    console.error("Failed to init DB:", err);
-    process.exit(1);
-  });
+app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));

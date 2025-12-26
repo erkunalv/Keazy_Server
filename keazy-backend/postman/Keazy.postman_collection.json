@@ -1,83 +1,173 @@
 {
   "info": {
-    "name": "Keazy Testing Collection",
-    "_postman_id": "12345678-abcd-efgh-ijkl-987654321000",
-    "description": "Postman collection for testing Keazy backend + ML microservice",
+    "name": "Keazy Backend API",
+    "description": "Postman collection for fully integrated testing of Keazy backend (CommonJS refactor, corrected URLs)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Flask Predict",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"query_text\": \"install tap\",\n  \"urgency\": \"normal\"\n}"
-        },
-        "url": {
-          "raw": "http://127.0.0.1:5000/predict",
-          "protocol": "http",
-          "host": ["127.0.0.1"],
-          "port": "5000",
-          "path": ["predict"]
-        }
-      }
-    },
-    {
-      "name": "Node Classify",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"query_text\": \"install tap\",\n  \"urgency\": \"normal\"\n}"
-        },
-        "url": {
-          "raw": "http://127.0.0.1:3000/classify",
-          "protocol": "http",
-          "host": ["127.0.0.1"],
-          "port": "3000",
-          "path": ["classify"]
-        }
-      }
-    },
-    {
-      "name": "Node Health Check",
+      "name": "Health",
       "request": {
         "method": "GET",
         "url": {
-          "raw": "http://127.0.0.1:3000/health",
+          "raw": "http://localhost:3000/health",
           "protocol": "http",
-          "host": ["127.0.0.1"],
+          "host": ["localhost"],
           "port": "3000",
           "path": ["health"]
         }
       }
     },
     {
-      "name": "MongoDB Logs (Mock)",
-      "request": {
-        "method": "GET",
-        "url": {
-          "raw": "http://127.0.0.1:3000/dashboard/logs",
-          "protocol": "http",
-          "host": ["127.0.0.1"],
-          "port": "3000",
-          "path": ["dashboard", "logs"]
+      "name": "Providers",
+      "item": [
+        {
+          "name": "Add Provider",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Test Provider\", \"service\": \"plumber\", \"contact\": \"9999999999\", \"hourly_rate\": 200, \"availability\": \"daily\", \"state\": \"UP\", \"district\": \"Amroha\", \"pincode\": \"244221\", \"lng\": 80.9462, \"lat\": 26.8467 }"
+            },
+            "url": {
+              "raw": "http://localhost:3000/providers/add",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["providers", "add"]
+            }
+          }
+        },
+        {
+          "name": "Find Nearby Providers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/providers/near?service=plumber&lng=80.9462&lat=26.8467&maxKm=10&limit=5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["providers", "near"],
+              "query": [
+                { "key": "service", "value": "plumber" },
+                { "key": "lng", "value": "80.9462" },
+                { "key": "lat", "value": "26.8467" },
+                { "key": "maxKm", "value": "10" },
+                { "key": "limit", "value": "5" }
+              ]
+            }
+          }
         }
-      },
-      "description": "This route will be wired later to fetch logs from MongoDB"
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/dashboard/logs",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["dashboard", "logs"]
+            }
+          }
+        },
+        {
+          "name": "Get Services",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/dashboard/services",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["dashboard", "services"]
+            }
+          }
+        },
+        {
+          "name": "Create Service",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Electrician\", \"description\": \"Handles wiring and electrical repairs\" }"
+            },
+            "url": {
+              "raw": "http://localhost:3000/dashboard/services",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["dashboard", "services"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Query",
+      "item": [
+        {
+          "name": "Submit Query",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"user_id\": \"U001\", \"query_text\": \"fix leaking pipe\", \"location\": \"Aligarh\" }"
+            },
+            "url": {
+              "raw": "http://localhost:3000/query",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["query"]
+            }
+          }
+        },
+        {
+          "name": "Feedback",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"log_id\": \"<replace_with_log_id>\", \"feedback\": \"confirm\" }"
+            },
+            "url": {
+              "raw": "http://localhost:3000/query/feedback",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["query", "feedback"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Classify",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"query_text\": \"install tap\", \"urgency\": \"normal\" }"
+        },
+        "url": {
+          "raw": "http://localhost:3000/classify",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["classify"]
+        }
+      }
     }
   ]
 }
