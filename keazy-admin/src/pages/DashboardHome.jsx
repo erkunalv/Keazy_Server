@@ -96,6 +96,22 @@ export default function DashboardHome() {
           </ul>
         )}
       </div>
+      <div style={{ marginTop: "1rem" }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => {
+            fetch(`${import.meta.env.VITE_API_BASE}/dashboard/retrain/confirmed`, {
+              method: "POST",
+            })
+              .then((res) => res.json())
+              .then((data) => toast.show(`Confirmed retrain: ${data.logs_used} logs`, "success"))
+              .catch(() => toast.show("Confirmed retrain failed", "error"));
+          }}
+        >
+          Retrain on Confirmed Logs
+        </Button>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import LogsPage from "./pages/LogsPage";
 import ServicesPage from "./pages/ServicesPage";
 import SlotsPage from "./pages/SlotsPage";
 import UsersPage from "./pages/UsersPage";
+import UserQuery from "./pages/UserQuery";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/slots" element={<SlotsPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/query" element={<UserQuery />} />
       </Routes>
     </div>
   );

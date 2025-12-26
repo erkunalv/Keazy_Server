@@ -1,117 +1,89 @@
-import { useLogs, useApproveLog, useAssignService } from "../api/logs";
-import { CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Button, Select, MenuItem } from "@mui/material";
-import { useState } from "react";
-import { useToast } from "../providers/ToastProvider";
+import { useEffect, useState } from "react";
+import {
+  CircularProgress,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+} from "@mui/material";
 
 export default function LogsPage() {
-  const { data, isLoading, isError } = useLogs();
-  const approveLog = useApproveLog();
-  const assignService = useAssignService();
-  const toast = useToast();
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [assignId, setAssignId] = useState(null);
-  const [serviceName, setServiceName] = useState("");
-  const [showLowConfidenceOnly, setShowLowConfidenceOnly] = useState(false);
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_BASE}/dashboard/logs`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch logs");
+        return res.json();
+      })
+      .then((data) => {
+        setLogs(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
 
-  if (isLoading) return <CircularProgress />;
-  if (isError) return <div style={{ color: "red" }}>Failed to load logs</div>;
-
-  const logs = data || [];
-  const LOW_CONFIDENCE_THRESHOLD = 0.6;
-
-  const filteredLogs = showLowConfidenceOnly
-    ? logs.filter(l => l.confidence < LOW_CONFIDENCE_THRESHOLD)
-    : logs;
-
-  const handleApprove = (log, approved) => {
-    approveLog.mutate(
-      { id: log._id, approved_for_training: approved },
-      {
-        onSuccess: () => toast.show("Log updated", "success"),
-        onError: () => toast.show("Failed to update log", "error"),
-      }
-    );
-  };
-
-  const handleAssign = () => {
-    assignService.mutate(
-      { id: assignId, assigned_service: serviceName },
-      {
-        onSuccess: () => toast.show("Service assigned", "success"),
-        onError: () => toast.show("Failed to assign service", "error"),
-      }
-    );
-    setAssignId(null);
-    setServiceName("");
-  };
+  if (loading) return <CircularProgress />;
+  if (error) return <Typography color="error">Error: {error}</Typography>;
 
   return (
-    <div>
-      <h2>Query Logs</h2>
+    <div style={{ maxWidth: 900, margin: "2rem auto" }}>
+      <Typography variant="h4" gutterBottom>
+        Query Logs
+      </Typography>
 
-      <Button
-        variant="outlined"
-        onClick={() => setShowLowConfidenceOnly(!showLowConfidenceOnly)}
-        style={{ marginBottom: "1rem" }}
-      >
-        {showLowConfidenceOnly ? "Show All Logs" : "Show Low-Confidence Only"}
-      </Button>
+      {logs.length === 0 ? (
+        <Typography>No logs available.</Typography>
+      ) : (
+        logs.map((log) => (
+          <Card key={log._id} style={{ marginBottom: "1rem" }}>
+            <CardContent>
+              <Typography variant="h6">{log.query_text}</Typography>
+              <Typography>
+                Predicted: {log.predicted_service} (Confidence:{" "}
+                {log.confidence})
+              </Typography>
 
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Query</TableCell>
-            <TableCell>Predicted</TableCell>
-            <TableCell>Confidence</TableCell>
-            <TableCell>Approved</TableCell>
-            <TableCell>Assign Service</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {filteredLogs.map(log => {
-            const isLowConfidence = log.confidence < LOW_CONFIDENCE_THRESHOLD;
-            return (
-              <TableRow key={log._id} style={{ backgroundColor: isLowConfidence ? "#fff3cd" : "inherit" }}>
-                <TableCell>{log.query_text}</TableCell>
-                <TableCell>{log.predicted_service}</TableCell>
-                <TableCell style={{ color: isLowConfidence ? "red" : "green" }}>
-                  {log.confidence.toFixed(2)}
-                  {isLowConfidence && " ⚠️"}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outlined"
-                    color={log.approved_for_training ? "success" : "error"}
-                    onClick={() => handleApprove(log, !log.approved_for_training)}
-                  >
-                    {log.approved_for_training ? "Approved" : "Rejected"}
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  {assignId === log._id ? (
-                    <>
-                      <Select
-                        value={serviceName}
-                        onChange={(e) => setServiceName(e.target.value)}
-                        size="small"
-                        style={{ marginRight: 8 }}
-                      >
-                        <MenuItem value="Plumber">Plumber</MenuItem>
-                        <MenuItem value="Electrician">Electrician</MenuItem>
-                        <MenuItem value="Doctor">Doctor</MenuItem>
-                        {/* TODO: dynamically fetch services */}
-                      </Select>
-                      <Button variant="contained" onClick={handleAssign}>Save</Button>
-                    </>
-                  ) : (
-                    <Button variant="outlined" onClick={() => setAssignId(log._id)}>Assign</Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+              {log.assigned_service && (
+                <Typography>
+                  Corrected by Admin: {log.assigned_service}
+                </Typography>
+              )}
+
+              {log.user_feedback && (
+                <Typography>
+                  User Feedback:{" "}
+                  {log.user_feedback === "confirm" ? "✅ Confirmed" : "❌ Rejected"}
+                </Typography>
+              )}
+
+              <Typography variant="caption" display="block" style={{ marginTop: "0.5rem" }}>
+                Created at: {new Date(log.created_at).toLocaleString()}
+              </Typography>
+
+              {/* Example admin action buttons */}
+              <div style={{ marginTop: "0.5rem" }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    // Example correction action
+                    // You can open a dialog or dropdown here
+                    alert("Assign service correction for this log");
+                  }}
+                >
+                  Correct Service
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
 }
