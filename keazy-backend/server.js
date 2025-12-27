@@ -1,44 +1,41 @@
-// server.js
-require('dotenv').config();
-const connectDB = require('./db/connect');
-connectDB();
-
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-
-// Import routes
-const providersRoutes = require('./routes/providers');
-const dashboardRoutes = require('./routes/dashboard');
-const queryRoutes = require('./routes/query');
-const classifyRoutes = require('./routes/classify');
-const adminRoutes = require('./routes/admin');
-const eventsRoutes = require('./routes/events');
-const jobsRoutes = require('./routes/jobs');
-const healthRoutes = require('./routes/health');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const xss = require("xss-clean");
+const logger = require("./utils/logger"); // Winston logger
 
 const app = express();
 
-// Middleware
-app.use(cors({ origin: 'http://localhost:5173' }));
-app.use(bodyParser.json());
+// 🔹 Global middleware
+app.use(express.json());
+app.use(cors({ origin: process.env.CORS_ORIGIN }));
+app.use(helmet());
+app.use(xss());
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP
+}));
 
-// Mount routes
-app.use('/providers', providersRoutes);
-app.use('/dashboard', dashboardRoutes);
-app.use('/query', queryRoutes);
-app.use('/classify', classifyRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/events', eventsRoutes);
-app.use('/jobs', jobsRoutes);
-app.use('/health', healthRoutes);
+// 🔹 Routes
+app.use("/query", require("./routes/query"));
+app.use("/classify", require("./routes/classify"));
+app.use("/dashboard", require("./routes/dashboard"));
+app.use("/providers", require("./routes/providers"));
+app.use("/jobs", require("./routes/jobs"));
+app.use("/events", require("./routes/events"));
+app.use("/api/admin", require("./routes/admin"));
+app.use("/health", require("./routes/health"));
 
-// Error handler
+// 🔹 Error handler (must be after routes)
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
+  logger.error("Unhandled error", { message: err.message, stack: err.stack });
+  res.status(500).json({ error: "Internal Server Error" });
 });
 
-// Start server
+// 🔹 Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
+app.listen(PORT, () => {
+  logger.info(`Backend running on port ${PORT}`);
+});

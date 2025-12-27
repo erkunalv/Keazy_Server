@@ -5,6 +5,8 @@ services:
     build: ./keazy-backend
     ports:
       - "3000:3000"
+    env_file:
+      - ./keazy-backend/.env
     depends_on:
       - mlservice
       - mongodb
@@ -12,7 +14,11 @@ services:
   mlservice:
     build: ./ml-service
     ports:
-      - "5001:5001"
+      - "5000:5000"   # match app.py
+    env_file:
+      - ./ml-service/.env
+    depends_on:
+      - mongodb
 
   mongodb:
     image: mongo:6
