@@ -1,0 +1,152 @@
+Project_3/
+├── .env.example (template - rename to .env)
+├── .env.development.example
+├── .env.production.example
+├── .gitignore
+├── README.md
+├── docker-compose.yml
+├── prometheus.yml
+├── promtail-config.yml
+│
+├── postman/
+│   └── Keazy.postman_collection.json
+│
+├── keazy-admin/
+│   ├── .env.example
+│   ├── README.md
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   │
+│   ├── public/
+│   │   └── vite.svg
+│   │
+│   └── src/
+│       ├── App.css
+│       ├── App.jsx
+│       ├── index.css
+│       ├── main.jsx
+│       │
+│       ├── api/
+│       │   ├── client.jsx
+│       │   ├── logs.js
+│       │   ├── logs.jsx
+│       │   ├── model.js
+│       │   ├── retrain.js
+│       │   ├── services.js
+│       │   ├── slots.js
+│       │   ├── stats.js
+│       │   └── users.js
+│       │
+│       ├── assets/
+│       │   └── react.svg
+│       │
+│       ├── components/
+│       │   ├── ConfirmDialog.jsx
+│       │   └── DashboardLayout.jsx
+│       │
+│       ├── pages/
+│       │   ├── DashboardHome.jsx
+│       │   ├── LogsPage.jsx
+│       │   ├── QueryLogsPage.jsx
+│       │   ├── ServicesPage.jsx
+│       │   ├── SlotsPage.jsx
+│       │   ├── UserQuery.jsx
+│       │   └── UsersPage.jsx
+│       │
+│       └── providers/
+│           └── ToastProvider.jsx
+│
+├── keazy-backend/
+│   ├── .env.example
+│   ├── Dockerfile
+│   ├── README.md
+│   ├── package.json
+│   ├── server.js
+│   │
+│   ├── db/
+│   │   └── connect.js
+│   │
+│   ├── entities/
+│   │   └── synonyms.json
+│   │
+│   ├── models/
+│   │   ├── event.js
+│   │   ├── job.js
+│   │   ├── provider.js
+│   │   ├── query.js
+│   │   ├── retrainHistory.js
+│   │   ├── service.js
+│   │   ├── slot.js
+│   │   └── user.js
+│   │
+│   ├── routes/
+│   │   ├── admin.js
+│   │   ├── classify.js
+│   │   ├── dashboard.js
+│   │   ├── events.js
+│   │   ├── health.js
+│   │   ├── jobs.js
+│   │   ├── ml.js
+│   │   ├── providers.js
+│   │   └── query.js
+│   │
+│   ├── seed/
+│   │   ├── providers.json
+│   │   ├── seed.js
+│   │   ├── seedLogs.js
+│   │   ├── seedQueries.js
+│   │   ├── services.json
+│   │   └── testQuery.js
+│   │
+│   ├── services/
+│   │   ├── entities.js
+│   │   ├── intent.js
+│   │   ├── intentModel.js
+│   │   ├── matcher.js
+│   │   └── urgency.js
+│   │
+│   └── utils/
+│       └── logger.js
+│
+└── ml-service/
+    ├── .env.example
+    ├── Dockerfile
+    ├── app.py
+    ├── requirements.txt
+    ├── seed_query_logs.py
+    ├── train_model.py
+    └── utils.py
+
+
+PROJECT SUMMARY:
+===============
+
+Tracked in Git: ✅
+- All source code (.js, .jsx, .py)
+- Configuration files
+- Seed data & templates
+- Documentation & API collections
+
+NOT Tracked (see .gitignore): ❌
+- node_modules/ (install with npm install / yarn)
+- logs/ (generated at runtime)
+- *.pkl files (ML models - too large)
+- .env files (use .env.example as template)
+- __pycache__/ (Python cache)
+- grafana-data/ (database files)
+- package-lock.json (regenerated)
+
+KEY DIRECTORIES:
+- keazy-admin/: Frontend React application (Vite)
+- keazy-backend/: Backend Node.js/Express API
+- ml-service/: Python ML service for intent classification
+- postman/: API testing collection
+
+SETUP:
+1. Clone repo
+2. Copy .env.example files to .env and configure
+3. Run: npm install (in keazy-admin and keazy-backend)
+4. Run: docker compose up
+

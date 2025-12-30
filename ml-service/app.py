@@ -11,10 +11,10 @@ from utils import TextExtractor, UrgencyExtractor
 
 # Load environment
 load_dotenv()
-PORT = int(os.getenv("PORT", "5000"))
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/keazy")
-API_KEY = os.getenv("API_KEY", "")
-CORS_ORIGIN = os.getenv("CORS_ORIGIN", "*")
+PORT = int(os.getenv("ML_PORT", "5000"))
+MONGO_URI = os.getenv("ML_MONGO_URI", "mongodb://localhost:27017/keazy")
+API_KEY = os.getenv("ML_API_KEY", "")
+CORS_ORIGIN = os.getenv("ML_CORS_ORIGIN", "*")
 
 # Flask app
 app = Flask(__name__)
@@ -109,6 +109,13 @@ def retrain():
         return jsonify({"error": "Not enough data to retrain"}), 400
     except Exception:
         return jsonify({"error": "Retrain failed"}), 500
+
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from flask import Response
+
+@app.route("/metrics")
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)

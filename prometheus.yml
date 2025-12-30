@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # Backend metrics
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:3000']
+
+  # ML service metrics
+  - job_name: 'mlservice'
+    static_configs:
+      - targets: ['mlservice:5000']
+
+  # MongoDB metrics (optional if you add exporter)
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']

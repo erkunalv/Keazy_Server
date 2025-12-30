@@ -1,12 +1,12 @@
-version: "3.8"
-
 services:
   backend:
     build: ./keazy-backend
     ports:
       - "3000:3000"
     env_file:
-      - ./keazy-backend/.env
+      - .env.development
+    volumes:
+      - ./keazy-backend/logs:/var/log/keazy   # mount logs for Promtail
     depends_on:
       - mlservice
       - mongodb
@@ -14,9 +14,11 @@ services:
   mlservice:
     build: ./ml-service
     ports:
-      - "5000:5000"   # match app.py
+      - "5000:5000"
     env_file:
-      - ./ml-service/.env
+      - .env.development
+    volumes:
+      - ./ml-service/logs:/var/log/mlservice  # optional: mount ML logs
     depends_on:
       - mongodb
 
@@ -26,6 +28,54 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - backend
+      - mlservice
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - ./keazy-backend/logs:/var/log/keazy
+      - ./ml-service/logs:/var/log/mlservice   # optional: ML logs
+      - ./promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+
+  mongodb-exporter:
+    image: bitnami/mongodb-exporter:latest
+    ports:
+      - "9216:9216"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+    command:
+      - --collect-all
+      - --collector.dbstats
+      - --collector.topmetrics
+      - --collector.indexstats
+      - --collector.collstats
+    depends_on:
+      - mongodb
 
 volumes:
   mongo_data:

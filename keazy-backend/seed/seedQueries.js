@@ -1,73 +1,124 @@
 const mongoose = require("mongoose");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
-// Connect to MongoDB
-mongoose.connect("mongodb://localhost:27017/keazy", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-const querySchema = new mongoose.Schema({
-  query_text: String,
-  normalized_service: String,
-  urgency: String,
-});
-
-const Query = mongoose.model("Query", querySchema);
+const Query = require("../models/query");
 
 async function seed() {
-  const sampleQueries = [
-    // Cobbler (10 samples)
-    { query_text: "fix shoes", normalized_service: "cobbler", urgency: "normal" },
-    { query_text: "repair sandals", normalized_service: "cobbler", urgency: "high" },
-    { query_text: "shoe sole repair", normalized_service: "cobbler", urgency: "normal" },
-    { query_text: "heel replacement", normalized_service: "cobbler", urgency: "low" },
-    { query_text: "jute repair karna", normalized_service: "cobbler", urgency: "normal" },
-    { query_text: "chappal thik karna", normalized_service: "cobbler", urgency: "high" },
-    { query_text: "polish shoes", normalized_service: "cobbler", urgency: "low" },
-    { query_text: "boot stitching", normalized_service: "cobbler", urgency: "normal" },
-    { query_text: "sandals ka strap thik karo", normalized_service: "cobbler", urgency: "normal" },
-    { query_text: "repair leather shoes", normalized_service: "cobbler", urgency: "high" },
+  let connection;
+  try {
+    console.log("🔄 Connecting to MongoDB...");
+    console.log("   MONGO_URI:", process.env.MONGO_URI);
+    
+    connection = await mongoose.connect(process.env.MONGO_URI, {
+      dbName: "keazy"
+    });
+    console.log("✅ Connected successfully");
 
-    // Pharmacy (10 samples)
-    { query_text: "buy medicine", normalized_service: "pharmacy", urgency: "normal" },
-    { query_text: "get tablets", normalized_service: "pharmacy", urgency: "low" },
-    { query_text: "purchase vitamins", normalized_service: "pharmacy", urgency: "normal" },
-    { query_text: "buy antibiotics", normalized_service: "pharmacy", urgency: "high" },
-    { query_text: "dawa lena hai", normalized_service: "pharmacy", urgency: "normal" },
-    { query_text: "medicine shop nearby", normalized_service: "pharmacy", urgency: "normal" },
-    { query_text: "painkiller kharidna", normalized_service: "pharmacy", urgency: "high" },
-    { query_text: "get syrup", normalized_service: "pharmacy", urgency: "low" },
-    { query_text: "pharmacy se dawa", normalized_service: "pharmacy", urgency: "normal" },
-    { query_text: "buy paracetamol", normalized_service: "pharmacy", urgency: "high" },
+    const sampleQueries = [
+      // Cobbler (10 samples)
+      { user_id: "seed-user", query_text: "fix shoes", normalized_service: "cobbler", urgency: "normal" },
+      { user_id: "seed-user", query_text: "repair sandals", normalized_service: "cobbler", urgency: "high" },
+      { user_id: "seed-user", query_text: "shoe sole repair", normalized_service: "cobbler", urgency: "normal" },
+      { user_id: "seed-user", query_text: "heel replacement", normalized_service: "cobbler", urgency: "low" },
+      { user_id: "seed-user", query_text: "jute repair karna", normalized_service: "cobbler", urgency: "normal" },
+      { user_id: "seed-user", query_text: "chappal thik karna", normalized_service: "cobbler", urgency: "high" },
+      { user_id: "seed-user", query_text: "polish shoes", normalized_service: "cobbler", urgency: "low" },
+      { user_id: "seed-user", query_text: "boot stitching", normalized_service: "cobbler", urgency: "normal" },
+      { user_id: "seed-user", query_text: "sandals ka strap thik karo", normalized_service: "cobbler", urgency: "normal" },
+      { user_id: "seed-user", query_text: "repair leather shoes", normalized_service: "cobbler", urgency: "high" },
 
-    // Plumber (10 samples)
-    { query_text: "fix leaking pipe", normalized_service: "plumber", urgency: "high" },
-    { query_text: "install tap", normalized_service: "plumber", urgency: "normal" },
-    { query_text: "repair bathroom leak", normalized_service: "plumber", urgency: "high" },
-    { query_text: "install shower", normalized_service: "plumber", urgency: "normal" },
-    { query_text: "pipe burst repair", normalized_service: "plumber", urgency: "high" },
-    { query_text: "nali saaf karna", normalized_service: "plumber", urgency: "normal" },
-    { query_text: "kitchen sink repair", normalized_service: "plumber", urgency: "low" },
-    { query_text: "tap leakage", normalized_service: "plumber", urgency: "normal" },
-    { query_text: "bathroom fitting", normalized_service: "plumber", urgency: "normal" },
-    { query_text: "water line thik karna", normalized_service: "plumber", urgency: "high" },
+      // Pharmacy (10 samples)
+      { user_id: "seed-user", query_text: "buy medicine", normalized_service: "pharmacy", urgency: "normal" },
+      { user_id: "seed-user", query_text: "get tablets", normalized_service: "pharmacy", urgency: "low" },
+      { user_id: "seed-user", query_text: "purchase vitamins", normalized_service: "pharmacy", urgency: "normal" },
+      { user_id: "seed-user", query_text: "buy antibiotics", normalized_service: "pharmacy", urgency: "high" },
+      { user_id: "seed-user", query_text: "dawa lena hai", normalized_service: "pharmacy", urgency: "normal" },
+      { user_id: "seed-user", query_text: "medicine shop nearby", normalized_service: "pharmacy", urgency: "normal" },
+      { user_id: "seed-user", query_text: "painkiller kharidna", normalized_service: "pharmacy", urgency: "high" },
+      { user_id: "seed-user", query_text: "get syrup", normalized_service: "pharmacy", urgency: "low" },
+      { user_id: "seed-user", query_text: "pharmacy se dawa", normalized_service: "pharmacy", urgency: "normal" },
+      { user_id: "seed-user", query_text: "buy paracetamol", normalized_service: "pharmacy", urgency: "high" },
 
-    // Electrician (10 samples)
-    { query_text: "repair fan", normalized_service: "electrician", urgency: "normal" },
-    { query_text: "install light", normalized_service: "electrician", urgency: "low" },
-    { query_text: "repair wiring", normalized_service: "electrician", urgency: "high" },
-    { query_text: "install socket", normalized_service: "electrician", urgency: "normal" },
-    { query_text: "fan ka switch thik karo", normalized_service: "electrician", urgency: "normal" },
-    { query_text: "tube light repair", normalized_service: "electrician", urgency: "high" },
-    { query_text: "electric board fitting", normalized_service: "electrician", urgency: "normal" },
-    { query_text: "short circuit fix", normalized_service: "electrician", urgency: "high" },
-    { query_text: "wiring karna hai", normalized_service: "electrician", urgency: "normal" },
-    { query_text: "install inverter", normalized_service: "electrician", urgency: "low" },
-  ];
+      // Plumber (10 samples)
+      { user_id: "seed-user", query_text: "fix leaking pipe", normalized_service: "plumber", urgency: "high" },
+      { user_id: "seed-user", query_text: "install tap", normalized_service: "plumber", urgency: "normal" },
+      { user_id: "seed-user", query_text: "repair bathroom leak", normalized_service: "plumber", urgency: "high" },
+      { user_id: "seed-user", query_text: "install shower", normalized_service: "plumber", urgency: "normal" },
+      { user_id: "seed-user", query_text: "pipe burst repair", normalized_service: "plumber", urgency: "high" },
+      { user_id: "seed-user", query_text: "nali saaf karna", normalized_service: "plumber", urgency: "normal" },
+      { user_id: "seed-user", query_text: "kitchen sink repair", normalized_service: "plumber", urgency: "low" },
+      { user_id: "seed-user", query_text: "tap leakage", normalized_service: "plumber", urgency: "normal" },
+      { user_id: "seed-user", query_text: "bathroom fitting", normalized_service: "plumber", urgency: "normal" },
+      { user_id: "seed-user", query_text: "water line thik karna", normalized_service: "plumber", urgency: "high" },
 
-  await Query.insertMany(sampleQueries);
-  console.log("✅ 40 sample queries inserted (10 per service)");
-  mongoose.disconnect();
+      // Electrician (10 samples)
+      { user_id: "seed-user", query_text: "repair fan", normalized_service: "electrician", urgency: "normal" },
+      { user_id: "seed-user", query_text: "install light", normalized_service: "electrician", urgency: "low" },
+      { user_id: "seed-user", query_text: "repair wiring", normalized_service: "electrician", urgency: "high" },
+      { user_id: "seed-user", query_text: "install socket", normalized_service: "electrician", urgency: "normal" },
+      { user_id: "seed-user", query_text: "fan ka switch thik karo", normalized_service: "electrician", urgency: "normal" },
+      { user_id: "seed-user", query_text: "tube light repair", normalized_service: "electrician", urgency: "high" },
+      { user_id: "seed-user", query_text: "electric board fitting", normalized_service: "electrician", urgency: "normal" },
+      { user_id: "seed-user", query_text: "short circuit fix", normalized_service: "electrician", urgency: "high" },
+      { user_id: "seed-user", query_text: "wiring karna hai", normalized_service: "electrician", urgency: "normal" },
+      { user_id: "seed-user", query_text: "install inverter", normalized_service: "electrician", urgency: "low" }
+    ];
+
+    // Validate all have user_id
+    console.log("\n🔍 Validating queries...");
+    let valid = true;
+    sampleQueries.forEach((q, i) => {
+      if (!q.user_id || q.user_id.trim() === "") {
+        console.error(`   ❌ Query ${i} missing user_id:`, q);
+        valid = false;
+      }
+      if (!q.query_text || q.query_text.trim() === "") {
+        console.error(`   ❌ Query ${i} missing query_text:`, q);
+        valid = false;
+      }
+    });
+
+    if (!valid) {
+      throw new Error("Validation failed: some queries are missing required fields");
+    }
+    console.log("✅ All queries valid");
+
+    // Clear and insert
+    console.log("\n🔄 Clearing existing queries...");
+    const deleted = await Query.deleteMany({});
+    console.log(`✅ Deleted ${deleted.deletedCount} old queries`);
+
+    console.log("\n🔄 Inserting new queries...");
+    const inserted = await Query.insertMany(sampleQueries);
+    console.log(`✅ Successfully inserted ${inserted.length} queries`);
+
+    // Verify
+    console.log("\n🔍 Verifying insertion...");
+    const count = await Query.countDocuments({});
+    console.log(`✅ Database now has ${count} queries`);
+
+    console.log("\n✅ Seeding completed successfully!");
+
+  } catch (err) {
+    console.error("\n❌ Seeding failed:");
+    console.error("   Error message:", err.message);
+    if (err.errors) {
+      console.error("   Validation errors:", err.errors);
+    }
+    console.error("   Full error:", err);
+    process.exit(1);
+
+  } finally {
+    console.log("\n🔄 Disconnecting from MongoDB...");
+    try {
+      if (connection) {
+        await mongoose.disconnect();
+      }
+    } catch (disconnectErr) {
+      console.error("❌ Error during disconnect:", disconnectErr.message);
+    }
+  }
 }
 
-seed().catch(err => console.error(err));
+seed();

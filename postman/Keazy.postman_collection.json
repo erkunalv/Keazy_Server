@@ -1,0 +1,136 @@
+{
+  "info": {
+    "name": "Keazy ML Workflow",
+    "_postman_id": "keazy-ml-workflow-001",
+    "description": "End-to-end Keazy loop: seed → predict → feedback → correct → retrain → logs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Predict Query",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"postman-user\",\n  \"query_text\": \"fix leaking pipe\",\n  \"urgency\": \"high\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/query",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "query"]
+        }
+      }
+    },
+    {
+      "name": "Feedback on Query",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"log_id\": \"<replace_with_log_id>\",\n  \"user_feedback\": \"confirm\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/query/feedback",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "query", "feedback"]
+        }
+      }
+    },
+    {
+      "name": "Admin Predict (ML Logs)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"postman-user\",\n  \"query_text\": \"install socket\",\n  \"urgency\": \"normal\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/admin/ml/predict",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "ml", "predict"]
+        }
+      }
+    },
+    {
+      "name": "Admin Correct Log",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"assigned_service\": \"electrician\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/admin/ml/logs/<replace_with_log_id>/correct",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "ml", "logs", "<replace_with_log_id>", "correct"]
+        }
+      }
+    },
+    {
+      "name": "Admin Feedback Log",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_feedback\": \"reject\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/admin/ml/logs/<replace_with_log_id>/feedback",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "ml", "logs", "<replace_with_log_id>", "feedback"]
+        }
+      }
+    },
+    {
+      "name": "Fetch ML Logs",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:3000/api/admin/ml/logs",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "ml", "logs"]
+        }
+      }
+    },
+    {
+      "name": "Retrain ML Model",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "http://localhost:3000/api/admin/ml/retrain",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "admin", "ml", "retrain"]
+        }
+      }
+    }
+  ]
+}
