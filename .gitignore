@@ -1,0 +1,131 @@
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Logs
+logs/
+*.log
+/keazy-backend/logs/
+/ml-service/logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vs/
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Machine Learning / Model files (large binary files)
+# Keep only in production, commit serialized versions if needed
+*.pickle
+*.joblib
+*.h5
+*.pt
+*.pth
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+grafana-data/
+mongodb_data/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# OS specific
+.AppleDouble
+.LSOverride
+
+# Node processes
+.node-gyp/
+
+# Yarn
+.yarn/cache
+.yarn/install-state.gz
+
+# Next.js / Vite
+.next/
+.nuxt/
+dist/
+.cache/
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+
+# MacOS
+.AppleDouble
+.LSOverride
+
+# IDE specific Python
+.env.virtualenv
+
+# Local testing
+test-results/
+cypress/videos/
+cypress/screenshots/
+
+# Docker
+.dockerignore
+
+# Lock files (optional - keep for reproducible builds)
+# yarn.lock
+# pnpm-lock.yaml

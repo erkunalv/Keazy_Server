@@ -8,14 +8,14 @@ This repo contains the **backend**, **ML microservice**, and **admin frontend** 
 ## 📂 Project Structure
 
 - **keazy-backend** → Node.js + Express backend  
-  - Modular routes (`query`, `classify`, `dashboard`, `providers`, etc.)  
+  - Modular routes (`admin/ml`, `providers`, `services`, etc.)  
   - Models (`User`, `Provider`, `Service`, `Slot`, `Query`, `RetrainHistory`, `Job`, `Event`)  
   - Two-layer architecture: rule-based filtering first, ML fallback second  
   - Integrated feedback loop for retraining  
 
 - **ml-service** → Python + Flask microservice  
   - Trains and serves intent classification model  
-  - Exposes `/predict` endpoint for backend integration  
+  - Exposes `/predict` and `/retrain` endpoints for backend integration  
   - Generates `intent_model.pkl` and `vectorizer.pkl`  
 
 - **keazy-admin** → Frontend dashboard (React/MUI)  
@@ -23,13 +23,16 @@ This repo contains the **backend**, **ML microservice**, and **admin frontend** 
   - Logs viewer and retraining controls  
   - Metrics and oversight for human-in-the-loop validation  
 
+- **docker-compose.yml** → Containerized orchestration of backend, ML service, MongoDB, Prometheus, Grafana
+
 ---
 
 ## 📦 Prerequisites
 
-- **Node.js** (>= 18.x)  
-- **Python** (>= 3.10)  
-- **MongoDB** (running locally on `mongodb://localhost:27017`)  
+- **Docker** + **Docker Compose** (for containerized setup)  
+- **Node.js** (>= 18.x) if running backend locally  
+- **Python** (>= 3.10) if running ML service locally  
+- **MongoDB** (containerized or local)  
 - **Git** (for cloning and version control)  
 - **Postman** (for API testing)  
 
@@ -42,110 +45,85 @@ This repo contains the **backend**, **ML microservice**, and **admin frontend** 
 git clone https://github.com/<your-username>/Keazy_Server.git
 cd Keazy_Server
 ```
+Note: All feature branches must originate from Dev. Only Dev merges into main.
 
-**Note: It is mandatory to create branches from Dev branch, only final Dev can merge to main, rest all work and releases originate and merge to Dev branch.**
-
-### 2. Backend (Node.js)
+### 2. Start services with Docker
 ```bash
-cd keazy-backend
-npm install
+docker compose up -d
+```
+This will start:
+- Backend on http://localhost:3000
+- ML service on http://localhost:5000
+- Grafana/Prometheus on http://localhost:9090
+
+### 3. Seed data in Docker Desktop
+```bash
+docker compose exec backend node seed/seed.js
+docker compose exec backend node seed/seedQueries.js
+docker compose exec backend node seed/seedLogs.js
 ```
 
-### 3. ML Microservice (Python + Flask)
+### 4. Retrain ML model
 ```bash
-cd ml-service
-pip install -r requirements.txt
+docker compose exec mlservice python train_model.py
+docker compose restart mlservice
 ```
 
-### 4. Admin Frontend
-```bash
-cd keazy-admin
-npm install
+### 🚀 Running Locally (Optional)
+If you prefer not to use Docker:
+- Start MongoDB locally
+- Train ML model with
 ```
-
----
-
-## 🚀 Running the System
-
-### 1. Start MongoDB
-Make sure MongoDB is running locally:
-```bash
-net start MongoDB
-```
-
-### 2. Train the ML Model
-Run the training script to generate model artifacts:
-```bash
-cd ml-service
 python train_model.py
 ```
-
-Outputs:
-- `intent_model.pkl`  
-- `vectorizer.pkl`  
-- Classification report (printed in console)  
-
-### 3. Start Flask Microservice
-```bash
-cd ml-service
+- Run Flask microservice with 
+```
 python app.py
 ```
-Flask will start on:  
-`http://127.0.0.1:5000/predict`
 
-### 4. Seed and Start Node Backend
-```bash
-cd keazy-backend
-npm run seed   # seeds providers, services, queries
-npm run dev    # starts backend with nodemon
+Start backend with
 ```
-
-Backend will start on:  
-- `http://127.0.0.1:3000/query`  
-- `http://127.0.0.1:3000/classify`  
-- `http://127.0.0.1:3000/dashboard`  
-
-### 5. Start Admin Frontend
-```bash
-cd keazy-admin
 npm run dev
 ```
-Frontend will start on:  
-`http://localhost:5173`
 
----
+Start admin frontend with
+```
+npm run dev
+```
 
-## 🧪 Testing
+### 🧪 Testing
+Use Postman with the provided collection (keazy-backend/postman/Keazy.postman_collection.json):
 
-- Import the Postman collection:  
-  `keazy-backend/postman/Keazy.postman_collection.json`  
-- Test endpoints end-to-end:  
-  - `/query` → rule-based + ML fallback  
-  - `/classify` → ML-only classification  
-  - `/dashboard` → logs, services, slots, users, retrain  
-  - `/providers` → add/find providers  
-  - `/jobs` and `/events` → job lifecycle and tracking  
+- Predict:  
+POST http://localhost:3000/api/admin/ml/predict
 
-Feedback (`/query/feedback`) ties user validation back into retraining.
+- Correct prediction:  
+POST http://localhost:3000/api/admin/ml/logs/:id/correct
 
----
+- Feedback:  
+POST http://localhost:3000/api/admin/ml/logs/:id/feedback
 
-## 📐 Architecture Recap
+- Fetch logs:  
+GET http://localhost:3000/api/admin/ml/logs
 
-- **Layer 1: Rule-based filtering**  
-  - Synonyms + manual heuristics  
-  - Provider matching by service + location  
+- Retrain:  
+POST http://localhost:3000/api/admin/ml/retrain
 
-- **Layer 2: ML-powered classification**  
-  - Intent model predicts service when rule-based fails  
-  - Confidence scores logged for admin oversight  
+### 📐 Architecture Recap
 
-- **Feedback Loop**  
-  - Queries logged in `Query` collection  
-  - Admin dashboard approves/rejects predictions  
-  - Retraining triggered from dashboard using confirmed logs  
+#### Layer 1: Rule-based filtering
 
----
+- Synonyms + manual heuristics
+- Provider matching by service + location
 
-#### Built by Kunal Verma  
-Founder & Security Lead at Key Systems and Technologies (**KeySysTech**)
+#### Layer 2: ML-powered classification
+
+- Intent model predicts service when rule-based fails
+- Confidence scores logged for admin oversight
+- Feedback Loop
+- Queries logged in Query collection
+- Admin dashboard approves/rejects predictions
+- Retraining triggered from dashboard using confirmed logs
+
+### Built by Kunal Verma
+Founder at Key Systems and Technologies (KeySysTech)

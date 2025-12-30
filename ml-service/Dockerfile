@@ -1,19 +1,16 @@
-# Use Python 3.13 base image
-FROM python:3.13
+FROM python:3.11-slim
 
-
-# Set working directory
 WORKDIR /app
 
-# Copy requirements (if you have one)
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code and model
 COPY . .
 
-# Expose port
-EXPOSE 5001
+# Expose unified port
+EXPOSE 5000
+
+COPY models/ ./models/
 
 # Start Flask app
-CMD ["python", "ml_service.py"]
+CMD ["python", "app.py"]

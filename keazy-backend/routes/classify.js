@@ -11,8 +11,8 @@ router.post("/", async (req, res) => {
     if (!query_text || typeof query_text !== "string") {
       return res.status(400).json({ error: "query_text is required" });
     }
-    if (!user_id) {
-      return res.status(400).json({ error: "user_id is required" });
+    if (!user_id || typeof user_id !== "string" || user_id.trim() === "") {
+      return res.status(400).json({ error: "user_id is required and must be non-empty" });
     }
 
     // Call ML microservice
