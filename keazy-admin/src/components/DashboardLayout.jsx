@@ -20,8 +20,17 @@ export default function DashboardLayout() {
           <ListItem button component={Link} to="/">
             <ListItemText primary="Home" />
           </ListItem>
+          <ListItem button component={Link} to="/predict">
+            <ListItemText primary="Predict Query" />
+          </ListItem>
           <ListItem button component={Link} to="/logs">
             <ListItemText primary="Query Logs" />
+          </ListItem>
+          <ListItem button component={Link} to="/ml-logs">
+            <ListItemText primary="ML Logs" />
+          </ListItem>
+          <ListItem button component={Link} to="/retrain">
+            <ListItemText primary="🤖 Model Retrain" />
           </ListItem>
           <ListItem button component={Link} to="/services">
             <ListItemText primary="Services" />

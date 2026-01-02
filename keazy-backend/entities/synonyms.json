@@ -1,6 +1,9 @@
 {
-  "electrician": ["bijli wala", "fan repair", "light kaam", "wiring"],
-  "plumber": ["nal tut gaya", "pipe leak", "paani wala", "tap repair"],
-  "tutor": ["maths tuition", "home teacher", "study help", "coaching"],
-  "salon": ["beauty parlour", "hair cut", "facial", "makeup"]
+  "electrician": ["fan", "bijli wala", "light", "wiring", "electricity", "electric", "electrician", "switch", "bulb", "power"],
+  "plumber": ["pipe", "leak", "tap", "nal", "paani", "sink", "water", "sewer", "toilet", "plumber"],
+  "cobbler": ["shoe", "boot", "sandal", "jute", "chappal", "sole", "heel", "polish", "leather", "cobbler"],
+  "tailor": ["shirt", "dress", "cloth", "fabric", "stitching", "tailoring", "tailor", "pant", "suit", "alter"],
+  "pharmacy": ["medicine", "dawa", "tablet", "syrup", "painkiller", "antibiotics", "vitamins", "doctor", "pharmacy", "drug"],
+  "tutor": ["tuition", "teacher", "study", "coaching", "tutor", "maths", "english"],
+  "salon": ["salon", "parlour", "haircut", "beauty", "facial", "makeup", "hair"]
 }

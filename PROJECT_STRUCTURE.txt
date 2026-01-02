@@ -1,3 +1,10 @@
+================================================================================
+                         KEAZY - PROJECT ARCHITECTURE
+================================================================================
+
+DIRECTORY STRUCTURE
+================================================================================
+
 Project_3/
 ├── .env.example (template - rename to .env)
 ├── .env.development.example
@@ -11,117 +18,398 @@ Project_3/
 ├── postman/
 │   └── Keazy.postman_collection.json
 │
-├── keazy-admin/
-│   ├── .env.example
-│   ├── README.md
-│   ├── eslint.config.js
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.js
-│   │
-│   ├── public/
-│   │   └── vite.svg
-│   │
-│   └── src/
-│       ├── App.css
-│       ├── App.jsx
-│       ├── index.css
-│       ├── main.jsx
-│       │
-│       ├── api/
-│       │   ├── client.jsx
-│       │   ├── logs.js
-│       │   ├── logs.jsx
-│       │   ├── model.js
-│       │   ├── retrain.js
-│       │   ├── services.js
-│       │   ├── slots.js
-│       │   ├── stats.js
-│       │   └── users.js
-│       │
-│       ├── assets/
-│       │   └── react.svg
-│       │
-│       ├── components/
-│       │   ├── ConfirmDialog.jsx
-│       │   └── DashboardLayout.jsx
-│       │
-│       ├── pages/
-│       │   ├── DashboardHome.jsx
-│       │   ├── LogsPage.jsx
-│       │   ├── QueryLogsPage.jsx
-│       │   ├── ServicesPage.jsx
-│       │   ├── SlotsPage.jsx
-│       │   ├── UserQuery.jsx
-│       │   └── UsersPage.jsx
-│       │
-│       └── providers/
-│           └── ToastProvider.jsx
+├── keazy-admin/                # React Frontend (Vite + MUI)
+│   ├── src/
+│   │   ├── api/                # API client hooks (React Query)
+│   │   ├── components/         # Reusable UI components
+│   │   ├── pages/              # Route pages
+│   │   └── providers/          # Context providers (Toast, Auth)
+│   └── vite.config.js
 │
-├── keazy-backend/
-│   ├── .env.example
-│   ├── Dockerfile
-│   ├── README.md
-│   ├── package.json
-│   ├── server.js
-│   │
-│   ├── db/
-│   │   └── connect.js
-│   │
-│   ├── entities/
-│   │   └── synonyms.json
-│   │
-│   ├── models/
-│   │   ├── event.js
-│   │   ├── job.js
-│   │   ├── provider.js
-│   │   ├── query.js
-│   │   ├── retrainHistory.js
-│   │   ├── service.js
-│   │   ├── slot.js
-│   │   └── user.js
-│   │
-│   ├── routes/
-│   │   ├── admin.js
-│   │   ├── classify.js
-│   │   ├── dashboard.js
-│   │   ├── events.js
-│   │   ├── health.js
-│   │   ├── jobs.js
-│   │   ├── ml.js
-│   │   ├── providers.js
-│   │   └── query.js
-│   │
-│   ├── seed/
-│   │   ├── providers.json
-│   │   ├── seed.js
-│   │   ├── seedLogs.js
-│   │   ├── seedQueries.js
-│   │   ├── services.json
-│   │   └── testQuery.js
-│   │
-│   ├── services/
-│   │   ├── entities.js
-│   │   ├── intent.js
-│   │   ├── intentModel.js
-│   │   ├── matcher.js
-│   │   └── urgency.js
-│   │
-│   └── utils/
-│       └── logger.js
+├── keazy-backend/              # Node.js/Express API Server
+│   ├── routes/                 # API endpoints
+│   │   ├── query.js            # Main query processing pipeline
+│   │   └── dashboard.js        # Admin CRUD operations
+│   ├── services/               # Business logic
+│   │   ├── entities.js         # Rule-based service matching
+│   │   ├── intentModel.js      # ML service client
+│   │   └── urgency.js          # Urgency detection
+│   ├── models/                 # Mongoose schemas
+│   ├── seed/                   # Database seed scripts
+│   └── entities/
+│       └── synonyms.json       # Fallback keyword mappings
 │
-└── ml-service/
-    ├── .env.example
-    ├── Dockerfile
-    ├── app.py
-    ├── requirements.txt
-    ├── seed_query_logs.py
-    ├── train_model.py
-    └── utils.py
+├── ml-service/                 # Python ML Service (Flask)
+│   ├── app.py                  # REST API + prediction endpoint
+│   ├── train_model.py          # Model training script
+│   └── models/                 # Saved model artifacts (.pkl)
+│
+└── postman/                    # API testing collection
 
 
-PROJECT SUMMARY:
-===============
+================================================================================
+                           SYSTEM ARCHITECTURE
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              EXTERNAL CLIENT                                 │
+│                    (Mobile App / Web App / Voice Interface)                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      │ POST /query
+                                      │ { query_text, user_id, city }
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           KEAZY BACKEND (Node.js)                            │
+│                              Port: 3000                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
+│  │   Query      │───▶│   Service    │───▶│   Provider   │                  │
+│  │   Router     │    │   Matcher    │    │   Matcher    │                  │
+│  └──────────────┘    └──────────────┘    └──────────────┘                  │
+│         │                   │                   │                           │
+│         │            ┌──────┴──────┐            │                           │
+│         │            ▼             ▼            │                           │
+│         │     ┌──────────┐  ┌──────────┐       │                           │
+│         │     │  Rule    │  │   ML     │       │                           │
+│         │     │  Engine  │  │ Fallback │       │                           │
+│         │     │(synonyms)│  │ (HTTP)   │       │                           │
+│         │     └──────────┘  └────┬─────┘       │                           │
+│         │                        │              │                           │
+│         ▼                        ▼              ▼                           │
+│  ┌──────────────────────────────────────────────────────┐                  │
+│  │                    MongoDB Driver                     │                  │
+│  │         (Users, Queries, Providers, Slots)           │                  │
+│  └──────────────────────────────────────────────────────┘                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                    ┌─────────────────┴─────────────────┐
+                    │                                   │
+                    ▼                                   ▼
+┌───────────────────────────────────┐     ┌───────────────────────────────┐
+│      ML SERVICE (Python)           │     │         MONGODB               │
+│          Port: 5000                │     │        Port: 27017            │
+├───────────────────────────────────┤     ├───────────────────────────────┤
+│                                   │     │                               │
+│  ┌─────────────────────────────┐  │     │  Collections:                 │
+│  │   /predict Endpoint         │  │     │  ├── users                    │
+│  │   - TF-IDF Vectorizer       │  │     │  ├── queries                  │
+│  │   - LogisticRegression      │  │     │  ├── services                 │
+│  │   - Returns: service,       │  │     │  ├── providers                │
+│  │     confidence              │  │     │  ├── slots                    │
+│  └─────────────────────────────┘  │     │  ├── ml_logs                  │
+│                                   │     │  └── retrainhistories         │
+│  ┌─────────────────────────────┐  │     │                               │
+│  │   /retrain Endpoint         │  │     └───────────────────────────────┘
+│  │   - Fetches approved        │  │
+│  │     queries from DB         │  │
+│  │   - Retrains model          │  │
+│  │   - Hot-reloads             │  │
+│  └─────────────────────────────┘  │
+│                                   │
+└───────────────────────────────────┘
+
+
+================================================================================
+                          QUERY PROCESSING PIPELINE
+================================================================================
+
+Input: { query_text: "fix my fan urgently", user_id: "usr123", city: "Delhi" }
+
+Step 1: USER TRACKING
+├── Upsert user in DB (auto-create if new)
+├── Increment total_queries counter
+└── Update last_query_at timestamp
+
+Step 2: SERVICE DETECTION (Two-Phase)
+│
+├── Phase A: Rule-Based Matching (Fast Path)
+│   ├── Load synonyms from DB (5-min cache) or fallback JSON
+│   ├── Keyword scan: "fan" found → service = "electrician"
+│   ├── Confidence: 0.95 (rule-based)
+│   └── Source: "rule"
+│
+└── Phase B: ML Fallback (if rules fail)
+    ├── POST to ML service /predict
+    ├── TF-IDF vectorization + LogisticRegression
+    ├── Returns predicted_service + confidence
+    └── Source: "ml"
+
+Step 3: PROVIDER MATCHING
+├── Query: { service: "electrician", city: /Delhi/i }
+├── Sort by: available_now DESC, rating DESC, response_time ASC
+├── Limit: 5 providers
+└── Fallback: If no city match, search all locations
+
+Step 4: SLOT AGGREGATION
+├── For each provider, fetch available slots
+├── Filter: date >= today, available = true
+├── Sort: date ASC, time ASC
+└── Limit: 5 slots per provider
+
+Step 5: RESPONSE CONSTRUCTION
+├── Build "business cards" with provider + slots
+├── Log query to DB with latency_ms
+└── Return structured JSON response
+
+Output:
+{
+  "success": true,
+  "query": {
+    "detected_service": "electrician",
+    "confidence": 95,
+    "source": "rule",
+    "urgency": "high"
+  },
+  "business_cards": [
+    {
+      "name": "Brilliant Electrician",
+      "contact": "9876543217",
+      "rating": 4.6,
+      "next_available_slots": [
+        { "slot_id": "...", "date": "2026-01-01", "time": "09:00" }
+      ]
+    }
+  ],
+  "meta": { "latency_ms": 45, "log_id": "..." }
+}
+
+
+================================================================================
+                         DATA FLOW DIAGRAMS
+================================================================================
+
+1. QUERY FLOW (User → Response)
+───────────────────────────────
+
+  Client                Backend              ML Service           MongoDB
+    │                     │                      │                   │
+    │─── POST /query ────▶│                      │                  │
+    │                     │── upsert user ─────────────────────────▶│
+    │                     │◀─────── user doc ───────────────────────│
+    │                     │                      │                   │
+    │                     │── rule match ───────▶│                   │
+    │                     │   (cache/DB)         │                   │
+    │                     │◀── service ─────────│                   │
+    │                     │                      │                   │
+    │                     │   [if no rule match] │                   │
+    │                     │───── /predict ──────▶│                   │
+    │                     │◀── prediction ──────│                   │
+    │                     │                      │                   │
+    │                     │── find providers ───────────────────────▶│
+    │                     │◀─────── providers ──────────────────────│
+    │                     │                      │                   │
+    │                     │── find slots ───────────────────────────▶│
+    │                     │◀─────── slots ──────────────────────────│
+    │                     │                      │                   │
+    │                     │── log query ────────────────────────────▶│
+    │                     │                      │                   │
+    │◀── business cards ──│                      │                   │
+
+
+2. BOOKING FLOW (Slot Selection → Confirmation)
+───────────────────────────────────────────────
+
+  Client                Backend                          MongoDB
+    │                     │                                 │
+    │─ POST /query/book ─▶│                                 │
+    │   { slot_id,        │                                 │
+    │     user_id }       │                                 │
+    │                     │── atomic update slot ──────────▶│
+    │                     │   (available=false,             │
+    │                     │    booked_by=user_id,           │
+    │                     │    status='booked')             │
+    │                     │◀───── updated slot ────────────│
+    │                     │                                 │
+    │                     │── update user stats ───────────▶│
+    │                     │   (total_bookings++,            │
+    │                     │    last_booking_at=now)         │
+    │                     │                                 │
+    │◀── booking confirm ─│                                 │
+
+
+3. RETRAIN FLOW (Admin Trigger → Model Update)
+──────────────────────────────────────────────
+
+  Admin UI              Backend              ML Service           MongoDB
+    │                     │                      │                   │
+    │─ POST /retrain ────▶│                      │                   │
+    │                     │─── /retrain ────────▶│                   │
+    │                     │                      │── fetch approved ─▶│
+    │                     │                      │   queries          │
+    │                     │                      │◀─── training data ─│
+    │                     │                      │                   │
+    │                     │                      │── train model     │
+    │                     │                      │   (TF-IDF +       │
+    │                     │                      │    LogReg)        │
+    │                     │                      │                   │
+    │                     │                      │── save .pkl       │
+    │                     │                      │── hot reload      │
+    │                     │◀── success ─────────│                   │
+    │                     │                      │                   │
+    │                     │── log retrain ──────────────────────────▶│
+    │◀── retrain result ──│                      │                   │
+
+
+================================================================================
+                           DATABASE SCHEMA
+================================================================================
+
+USERS COLLECTION
+────────────────
+{
+  user_id: String (unique, indexed),
+  phone: String,
+  name: String,
+  city: String,
+  area: String,
+  preferences: { language: String, preferred_services: [String] },
+  total_queries: Number,
+  total_bookings: Number,
+  last_query_at: Date,
+  last_booking_at: Date,
+  verified: Boolean,
+  active: Boolean
+}
+
+SERVICES COLLECTION
+───────────────────
+{
+  name: String (indexed),           // "electrician", "plumber"
+  synonyms: [String],               // ["fan", "light", "wiring"]
+  description: String,
+  base_price_hint: Number,
+  enabled: Boolean
+}
+
+PROVIDERS COLLECTION
+────────────────────
+{
+  provider_id: String,
+  name: String,
+  service: String (indexed),        // Links to service.name
+  contact: String,
+  hourly_rate: Number,
+  city: String (indexed),
+  area: String,
+  rating: Number,
+  verified: Boolean,
+  available_now: Boolean,
+  response_time_min: Number
+}
+
+SLOTS COLLECTION
+────────────────
+{
+  provider_id: ObjectId (ref: Provider),
+  date: String,                     // "2026-01-01"
+  time: String,                     // "09:00"
+  duration_min: Number,
+  service_name: String,             // Denormalized for fast queries
+  available: Boolean,
+  status: Enum ['available', 'booked', 'completed', 'cancelled'],
+  booked_by: String,                // user_id
+  booked_at: Date,
+  booking_notes: String
+}
+
+QUERIES COLLECTION (Logs)
+─────────────────────────
+{
+  user_id: String,
+  query_text: String,
+  normalized_service: String,       // Detected service
+  assigned_service: String,         // Admin-corrected service
+  confidence: Number,
+  source: Enum ['rule', 'ml'],
+  urgency: Enum ['low', 'normal', 'high'],
+  latency_ms: Number,
+  location: String,
+  matched_providers: [ObjectId],
+  approved_for_training: Boolean,   // Admin approval for ML training
+  timestamp: Date
+}
+
+
+================================================================================
+                         API ENDPOINTS REFERENCE
+================================================================================
+
+QUERY ROUTES (/query)
+─────────────────────
+POST /query              Main query processing pipeline
+POST /query/book         Book a slot
+POST /query/cancel       Cancel a booking
+GET  /query/bookings/:id Get user's bookings
+POST /query/feedback     Submit feedback on prediction
+
+DASHBOARD ROUTES (/dashboard)
+─────────────────────────────
+GET  /dashboard/logs              Recent query logs
+GET  /dashboard/stats             System statistics
+GET  /dashboard/services          List services with synonyms
+POST /dashboard/services          Create service
+PUT  /dashboard/services/:id      Update service (clears synonym cache)
+GET  /dashboard/users             List users
+GET  /dashboard/users/:id         User profile + query history
+GET  /dashboard/slots             List slots (filterable)
+POST /dashboard/retrain           Trigger ML model retraining
+GET  /dashboard/retrain/history   Retrain history
+GET  /dashboard/model/status      Current model status
+POST /dashboard/logs/:id/approve  Approve log for training
+POST /dashboard/logs/:id/assign   Correct service assignment
+
+ML SERVICE ROUTES (Port 5000)
+─────────────────────────────
+GET  /health     Health check
+POST /predict    Service prediction (requires X-API-Key header)
+POST /retrain    Retrain model from approved logs
+GET  /metrics    Prometheus metrics
+
+
+================================================================================
+                         CONFIGURATION
+================================================================================
+
+ENVIRONMENT VARIABLES
+─────────────────────
+
+Backend (.env):
+  PORT=3000
+  MONGO_URI=mongodb://mongodb:27017/keazy
+  ML_SERVICE_URL=http://mlservice:5000
+  ML_API_KEY=your-secret-key
+
+ML Service (.env):
+  ML_PORT=5000
+  ML_MONGO_URI=mongodb://mongodb:27017/keazy
+  ML_API_KEY=your-secret-key
+  ML_CORS_ORIGIN=*
+
+Frontend (.env):
+  VITE_API_BASE=http://localhost:3000
+
+
+================================================================================
+                         DOCKER SERVICES
+================================================================================
+
+Service         Port    Description
+───────────────────────────────────────────────────
+mongodb         27017   MongoDB database
+backend         3000    Node.js API server
+mlservice       5000    Python ML service
+grafana         3001    Monitoring dashboard
+prometheus      9090    Metrics collection
+loki            3100    Log aggregation
+promtail        -       Log shipper
+
+
+================================================================================
+                         GIT TRACKING STATUS
+================================================================================
 
 Tracked in Git: ✅
 - All source code (.js, .jsx, .py)
@@ -138,15 +426,18 @@ NOT Tracked (see .gitignore): ❌
 - grafana-data/ (database files)
 - package-lock.json (regenerated)
 
-KEY DIRECTORIES:
-- keazy-admin/: Frontend React application (Vite)
-- keazy-backend/: Backend Node.js/Express API
-- ml-service/: Python ML service for intent classification
-- postman/: API testing collection
 
-SETUP:
-1. Clone repo
+================================================================================
+                         SETUP INSTRUCTIONS
+================================================================================
+
+1. Clone repository
 2. Copy .env.example files to .env and configure
 3. Run: npm install (in keazy-admin and keazy-backend)
-4. Run: docker compose up
+4. Run: docker compose up -d
+5. Seed database: docker exec project_3-backend-1 node seed/seedAll.js
+6. Access:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3000
+   - Grafana: http://localhost:3001
 

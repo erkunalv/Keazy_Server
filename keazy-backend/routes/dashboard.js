@@ -1,5 +1,24 @@
-// routes/dashboard.js
+/**
+ * @fileoverview Dashboard Admin Routes
+ * 
+ * Provides administrative endpoints for:
+ * - Query log viewing and management
+ * - Service CRUD with synonym management
+ * - User listing and statistics
+ * - Slot management with filtering
+ * - ML model retraining triggers
+ * - Log approval for training data
+ * - Prediction corrections workflow
+ * 
+ * All routes are prefixed with /dashboard
+ * 
+ * @module routes/dashboard
+ */
+
 const express = require('express');
+const mongoose = require('mongoose');
+const axios = require('axios');
+const logger = require('../utils/logger');
 const Service = require('../models/service');
 const Slot = require('../models/slot');
 const User = require('../models/user');
@@ -7,15 +26,132 @@ const Query = require('../models/query');
 const RetrainHistory = require('../models/retrainHistory');
 const router = express.Router();
 
-// Logs
+// ============================================================================
+// MIDDLEWARE
+// ============================================================================
+
+/**
+ * Admin authentication middleware placeholder.
+ * 
+ * TODO: Implement actual authentication:
+ * - JWT token validation
+ * - Session verification
+ * - Role-based access control
+ * 
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Function} next - Next middleware
+ */
+const adminAuth = (req, res, next) => {
+  // Placeholder: implement your actual admin check
+  // Example: check JWT token, session, or custom header
+  // For now, just pass through - add your auth logic here
+  next();
+};
+
+// ============================================================================
+// QUERY LOG ROUTES
+// ============================================================================
+
+/**
+ * GET /dashboard/logs - Fetch recent query logs
+ * 
+ * Returns the 50 most recent query logs with normalized field names
+ * for frontend compatibility.
+ * 
+ * @returns {Array} Array of log objects with predicted_service field
+ */
 router.get("/logs", async (_req, res) => {
   try {
-    const logs = await Query.find({}).sort({ created_at: -1 }).limit(50).lean();
-    res.json(logs);
+    const logs = await Query.find({}).sort({ timestamp: -1 }).limit(50).lean();
+    
+    // Transform to match frontend field expectations
+    const formattedLogs = logs.map(log => ({
+      ...log,
+      predicted_service: log.normalized_service || log.assigned_service || "",
+      created_at: log.timestamp
+    }));
+    res.json(formattedLogs);
   } catch (err) {
+    console.error("Logs fetch error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+/**
+ * GET /dashboard/ml-logs - Fetch ML prediction logs with filters
+ * 
+ * Query Parameters:
+ * - service: Filter by predicted_service
+ * - min_confidence: Filter by minimum confidence threshold
+ * - date_from: Start date for timestamp filter
+ * - date_to: End date for timestamp filter
+ * 
+ * @returns {Array} Filtered ML prediction logs
+ */
+router.get("/ml-logs", adminAuth, async (req, res) => {
+  try {
+    const db = mongoose.connection;
+    
+    // Verify database connection
+    if (db.readyState !== 1) {
+      return res.status(500).json({ error: "Database connection not ready" });
+    }
+
+    // Access raw ml_logs collection (not via Mongoose model)
+    const ml_logs = db.collection('ml_logs');
+
+    // Build dynamic filter from query parameters
+    const filter = {};
+
+    // Service filter
+    if (req.query.service) {
+      filter.predicted_service = req.query.service;
+    }
+
+    // Confidence threshold filter
+    if (req.query.min_confidence) {
+      const minConfidence = parseFloat(req.query.min_confidence);
+      if (!isNaN(minConfidence)) {
+        filter.confidence = { $gte: minConfidence };
+      }
+    }
+
+    // Date range filter
+    if (req.query.date_from || req.query.date_to) {
+      filter.timestamp = {};
+      if (req.query.date_from) {
+        filter.timestamp.$gte = new Date(req.query.date_from);
+      }
+      if (req.query.date_to) {
+        filter.timestamp.$lte = new Date(req.query.date_to);
+      }
+    }
+
+    // Execute query with projection for performance
+    const logs = await ml_logs
+      .find(filter)
+      .project({
+        user_id: 1,
+        query_text: 1,
+        predicted_service: 1,
+        confidence: 1,
+        latency_ms: 1,
+        timestamp: 1
+      })
+      .sort({ timestamp: -1 })
+      .toArray();
+
+    res.json(logs);
+  } catch (err) {
+    console.error('ML logs fetch error:', err);
+    res.status(500).json({ error: "Failed to fetch logs" });
+  }
+});
+
+// ============================================================================
+// ADDITIONAL LOG ROUTES
+// ============================================================================
 
 // Services CRUD
 router.get("/services", async (_req, res) => {
@@ -29,9 +165,12 @@ router.get("/services", async (_req, res) => {
 
 router.post("/services", async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, synonyms = [], base_price_hint, enabled = true } = req.body;
     if (!name) return res.status(400).json({ error: "name is required" });
-    const newService = await Service.create({ name, description });
+    const newService = await Service.create({ name, description, synonyms, base_price_hint, enabled });
+    // Clear synonyms cache so rule matcher picks up new service
+    const { clearSynonymsCache } = require('../services/entities');
+    clearSynonymsCache();
     res.json(newService);
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -41,9 +180,19 @@ router.post("/services", async (req, res) => {
 router.put("/services/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description } = req.body;
-    const result = await Service.findByIdAndUpdate(id, { name, description }, { new: true });
-    res.json({ updated: result ? 1 : 0 });
+    const { name, description, synonyms, base_price_hint, enabled } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (synonyms !== undefined) updateData.synonyms = synonyms;
+    if (base_price_hint !== undefined) updateData.base_price_hint = base_price_hint;
+    if (enabled !== undefined) updateData.enabled = enabled;
+    
+    const result = await Service.findByIdAndUpdate(id, updateData, { new: true });
+    // Clear synonyms cache so rule matcher picks up changes
+    const { clearSynonymsCache } = require('../services/entities');
+    clearSynonymsCache();
+    res.json(result || { updated: 0 });
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -53,6 +202,9 @@ router.delete("/services/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const result = await Service.findByIdAndDelete(id);
+    // Clear synonyms cache
+    const { clearSynonymsCache } = require('../services/entities');
+    clearSynonymsCache();
     res.json({ deleted: result ? 1 : 0 });
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -60,9 +212,19 @@ router.delete("/services/:id", async (req, res) => {
 });
 
 // Slots CRUD
-router.get("/slots", async (_req, res) => {
+router.get("/slots", async (req, res) => {
   try {
-    const slots = await Slot.find({}).sort({ date: 1 }).lean();
+    const { provider_id, service_name, available, date_from } = req.query;
+    const filter = {};
+    if (provider_id) filter.provider_id = provider_id;
+    if (service_name) filter.service_name = service_name;
+    if (available !== undefined) filter.available = available === 'true';
+    if (date_from) filter.date = { $gte: date_from };
+    
+    const slots = await Slot.find(filter)
+      .populate('provider_id', 'name service city')
+      .sort({ date: 1, time: 1 })
+      .lean();
     res.json(slots);
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -71,9 +233,11 @@ router.get("/slots", async (_req, res) => {
 
 router.post("/slots", async (req, res) => {
   try {
-    const { date, time, available = true, service_name } = req.body;
-    if (!date || !time) return res.status(400).json({ error: "date and time are required" });
-    const newSlot = await Slot.create({ date, time, available, service_name });
+    const { provider_id, date, time, duration_min = 60, service_name, available = true } = req.body;
+    if (!provider_id || !date || !time) {
+      return res.status(400).json({ error: "provider_id, date and time are required" });
+    }
+    const newSlot = await Slot.create({ provider_id, date, time, duration_min, service_name, available });
     res.json(newSlot);
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -83,19 +247,80 @@ router.post("/slots", async (req, res) => {
 router.put("/slots/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { date, time, available } = req.body;
-    const result = await Slot.findByIdAndUpdate(id, { date, time, available }, { new: true });
-    res.json({ updated: result ? 1 : 0 });
+    const { date, time, available, status, duration_min } = req.body;
+    const updateData = {};
+    if (date !== undefined) updateData.date = date;
+    if (time !== undefined) updateData.time = time;
+    if (available !== undefined) updateData.available = available;
+    if (status !== undefined) updateData.status = status;
+    if (duration_min !== undefined) updateData.duration_min = duration_min;
+    
+    const result = await Slot.findByIdAndUpdate(id, updateData, { new: true });
+    res.json(result || { updated: 0 });
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.delete("/slots/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await Slot.findByIdAndDelete(id);
+    res.json({ deleted: result ? 1 : 0 });
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
 // Users CRUD
-router.get("/users", async (_req, res) => {
+router.get("/users", async (req, res) => {
   try {
-    const users = await User.find({}).sort({ name: 1 }).lean();
+    const { active, verified } = req.query;
+    const filter = {};
+    if (active !== undefined) filter.active = active === 'true';
+    if (verified !== undefined) filter.verified = verified === 'true';
+    
+    const users = await User.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Get single user with their query history
+router.get("/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Try to find by _id first, then by user_id
+    let user = await User.findById(id).lean().catch(() => null);
+    if (!user) {
+      user = await User.findOne({ user_id: id }).lean();
+    }
+    
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Get user's recent queries
+    const queries = await Query.find({ user_id: user.user_id })
+      .sort({ timestamp: -1 })
+      .limit(20)
+      .lean();
+    
+    // Get user's bookings
+    const bookings = await Slot.find({ booked_by: user.user_id })
+      .populate('provider_id', 'name service city')
+      .sort({ date: -1 })
+      .lean();
+    
+    res.json({
+      user,
+      queries,
+      bookings
+    });
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -103,11 +328,15 @@ router.get("/users", async (_req, res) => {
 
 router.post("/users", async (req, res) => {
   try {
-    const { name, phone, email, approved = false } = req.body;
-    if (!name || !phone) return res.status(400).json({ error: "name and phone are required" });
-    const newUser = await User.create({ name, phone, email, approved });
+    const { user_id, name, phone, city, area, verified = false, active = true } = req.body;
+    if (!user_id) return res.status(400).json({ error: "user_id is required" });
+    
+    const newUser = await User.create({ user_id, name, phone, city, area, verified, active });
     res.json(newUser);
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ error: "User with this user_id already exists" });
+    }
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -115,9 +344,17 @@ router.post("/users", async (req, res) => {
 router.put("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, phone, email, approved } = req.body;
-    const result = await User.findByIdAndUpdate(id, { name, phone, email, approved }, { new: true });
-    res.json({ updated: result ? 1 : 0 });
+    const { name, phone, city, area, verified, active } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (city !== undefined) updateData.city = city;
+    if (area !== undefined) updateData.area = area;
+    if (verified !== undefined) updateData.verified = verified;
+    if (active !== undefined) updateData.active = active;
+    
+    const result = await User.findByIdAndUpdate(id, updateData, { new: true });
+    res.json(result || { updated: 0 });
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -153,9 +390,34 @@ router.post("/logs/:id/assign", async (req, res) => {
   try {
     const { id } = req.params;
     const { assigned_service } = req.body;
-    const result = await Query.findByIdAndUpdate(id, { assigned_service }, { new: true });
-    res.json({ updated: result ? 1 : 0 });
+    
+    if (!assigned_service || !assigned_service.trim()) {
+      return res.status(400).json({ error: "assigned_service is required" });
+    }
+
+    const result = await Query.findByIdAndUpdate(
+      id, 
+      { 
+        assigned_service: assigned_service.toLowerCase().trim(),
+        normalized_service: assigned_service.toLowerCase().trim()
+      }, 
+      { new: true }
+    );
+    
+    if (!result) {
+      return res.status(404).json({ error: "Log not found" });
+    }
+
+    res.json({ 
+      updated: 1, 
+      data: {
+        ...result.toObject(),
+        predicted_service: result.normalized_service,
+        created_at: result.timestamp
+      }
+    });
   } catch (err) {
+    console.error("Assign service error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -164,57 +426,185 @@ router.post("/logs/:id/assign", async (req, res) => {
 router.post("/retrain", async (_req, res) => {
   try {
     const approvedLogs = await Query.find({ approved_for_training: true }).lean();
-    const retrainResult = {
-      status: "success",
-      logs_used: approvedLogs.length,
-      retrained_at: new Date()
-    };
-    const created = await RetrainHistory.create(retrainResult);
-    res.json(created);
+    
+    console.log("🔄 Retrain request - Approved logs count:", approvedLogs.length);
+    
+    if (approvedLogs.length === 0) {
+      return res.status(400).json({ error: "No approved logs to train on" });
+    }
+
+    // Call ML service to retrain
+    const axios = require("axios");
+    const ML_URL = process.env.ML_URL || "http://mlservice:5000";
+    const ML_API_KEY = process.env.ML_API_KEY || "dev-key-placeholder";
+    
+    try {
+      console.log("📡 Calling ML service retrain at", ML_URL);
+      const response = await axios.post(`${ML_URL}/retrain`, {}, {
+        headers: { "X-API-Key": ML_API_KEY },
+        timeout: 30000
+      });
+      
+      console.log("✅ ML retrain response:", response.data);
+      
+      const retrainResult = {
+        status: "success",
+        logs_used: approvedLogs.length,
+        ml_response: response.data,
+        retrained_at: new Date()
+      };
+      
+      const created = await RetrainHistory.create(retrainResult);
+      console.log("💾 Retrain history saved:", created);
+      logger.info("Model retraining completed", { logs_used: approvedLogs.length });
+      res.json(created);
+    } catch (mlError) {
+      console.error("❌ ML retrain failed:", mlError.message);
+      logger.error("ML retrain failed", { error: mlError.message });
+      res.status(500).json({ error: "ML retrain failed: " + mlError.message });
+    }
   } catch (err) {
+    console.error("❌ Retrain endpoint error:", err.message);
+    logger.error("Retrain endpoint error", { error: err.message });
     res.status(500).json({ error: "Retrain failed" });
   }
 });
 
+// GET /dashboard/retrain/history - Get retrain history
 router.get("/retrain/history", async (_req, res) => {
   try {
-    const history = await RetrainHistory.find({}).sort({ retrained_at: -1 }).limit(5).lean();
+    const history = await RetrainHistory.find({}).sort({ retrained_at: -1 }).limit(10).lean();
     res.json(history);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch retrain history" });
+    logger.error("Failed to fetch retrain history", { error: err.message });
+    res.status(500).json({ error: "Failed to fetch history" });
   }
 });
 
+// GET /dashboard/model/status - Get current model status
 router.get("/model/status", async (_req, res) => {
   try {
-    const latest = await RetrainHistory.find({}).sort({ retrained_at: -1 }).limit(1).lean();
-    if (!latest.length) return res.json({ status: "No retrain yet" });
-    res.json(latest[0]);
+    const latestRetrain = await RetrainHistory.findOne({}).sort({ retrained_at: -1 }).lean();
+    
+    if (!latestRetrain) {
+      return res.json({ status: "No retrain yet" });
+    }
+    
+    res.json({
+      status: "trained",
+      retrained_at: latestRetrain.retrained_at,
+      logs_used: latestRetrain.logs_used,
+      metrics: latestRetrain.metrics || {}
+    });
   } catch (err) {
+    logger.error("Failed to fetch model status", { error: err.message });
     res.status(500).json({ error: "Failed to fetch model status" });
   }
 });
 
-router.post("/retrain/confirmed", async (_req, res) => {
+// DEBUG: GET /dashboard/debug/approved-logs - Check what approved logs look like
+router.get("/debug/approved-logs", async (_req, res) => {
   try {
-    const confirmedLogs = await Query.find({ user_feedback: "confirm" }).lean();
-    if (!confirmedLogs.length) return res.status(400).json({ error: "No confirmed logs available for retraining" });
+    const approvedLogs = await Query.find({ approved_for_training: true }).select({
+      query_text: 1,
+      normalized_service: 1,
+      assigned_service: 1,
+      urgency: 1,
+      approved_for_training: 1,
+      timestamp: 1
+    }).limit(10).lean();
 
-    const retrainResult = {
-      status: "success",
-      logs_used: confirmedLogs.length,
-      retrained_at: new Date(),
-      metrics: {
-        accuracy: Number(Math.random().toFixed(2)),
-        precision: Number(Math.random().toFixed(2)),
-        recall: Number(Math.random().toFixed(2))
-      }
-    };
-
-    const created = await RetrainHistory.create(retrainResult);
-    res.json(created);
+    res.json({
+      count: approvedLogs.length,
+      logs: approvedLogs,
+      sample: approvedLogs[0] || null
+    });
   } catch (err) {
-    res.status(500).json({ error: "Retrain failed" });
+    logger.error("Debug error", { error: err.message });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================================
+// CORRECTION WORKFLOW
+// Admin marks predictions as wrong and provides correct service
+// ============================================================================
+
+/**
+ * POST /dashboard/corrections - Save a correction
+ * 
+ * When an admin identifies a prediction error, this endpoint stores the
+ * correction in the Corrections collection for ML training improvement.
+ * 
+ * Request Body:
+ * {
+ *   query_id: string (log ID),
+ *   query_text: string,
+ *   original_service: string (predicted service),
+ *   corrected_service: string (correct service),
+ *   confidence: number,
+ *   timestamp: Date
+ * }
+ * 
+ * @returns {Object} Saved correction document
+ */
+router.post("/corrections", adminAuth, async (req, res) => {
+  try {
+    const { query_id, query_text, original_service, corrected_service, confidence } = req.body;
+    
+    if (!query_id || !corrected_service) {
+      return res.status(400).json({ error: "query_id and corrected_service required" });
+    }
+    
+    const db = mongoose.connection;
+    const correctionsCol = db.collection('corrections');
+    
+    const correction = {
+      query_id: new mongoose.Types.ObjectId(query_id),
+      query_text,
+      original_service,
+      corrected_service,
+      confidence: confidence || 0,
+      timestamp: new Date()
+    };
+    
+    const result = await correctionsCol.insertOne(correction);
+    
+    // Also update the original query log with correction info
+    await Query.findByIdAndUpdate(query_id, {
+      corrected_service,
+      corrected_at: new Date()
+    });
+    
+    logger.info("Correction saved", { query_id, corrected_service });
+    res.json({ success: true, correction_id: result.insertedId });
+  } catch (err) {
+    logger.error("Failed to save correction", { error: err.message });
+    res.status(500).json({ error: "Failed to save correction" });
+  }
+});
+
+/**
+ * GET /dashboard/corrections - Fetch corrections for retrain dataset
+ * 
+ * Returns all corrections that should be included in the next model retrain.
+ * 
+ * @returns {Array} Corrections with query and service info
+ */
+router.get("/corrections", adminAuth, async (req, res) => {
+  try {
+    const db = mongoose.connection;
+    const correctionsCol = db.collection('corrections');
+    
+    const corrections = await correctionsCol
+      .find({})
+      .sort({ timestamp: -1 })
+      .toArray();
+    
+    res.json(corrections);
+  } catch (err) {
+    logger.error("Failed to fetch corrections", { error: err.message });
+    res.status(500).json({ error: "Failed to fetch corrections" });
   }
 });
 

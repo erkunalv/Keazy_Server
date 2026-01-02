@@ -21,8 +21,15 @@ export default function DashboardHome() {
 
   const handleRetrain = () => {
     retrainModel.mutate(undefined, {
-      onSuccess: (data) => toast.show(`Retrained on ${data.logs_used} logs`, "success"),
-      onError: () => toast.show("Retrain failed", "error"),
+      onSuccess: (data) => {
+        console.log("✅ Retrain response:", data);
+        const logsUsed = data?.logs_used || "unknown";
+        toast.show(`Retrained on ${logsUsed} logs`, "success");
+      },
+      onError: (error) => {
+        console.error("❌ Retrain error:", error);
+        toast.show("Retrain failed: " + error?.message, "error");
+      },
     });
   };
 
@@ -101,15 +108,15 @@ export default function DashboardHome() {
           variant="contained"
           color="primary"
           onClick={() => {
-            fetch(`${import.meta.env.VITE_API_BASE}/dashboard/retrain/confirmed`, {
+            fetch(`${import.meta.env.VITE_API_BASE}/dashboard/retrain`, {
               method: "POST",
             })
               .then((res) => res.json())
-              .then((data) => toast.show(`Confirmed retrain: ${data.logs_used} logs`, "success"))
-              .catch(() => toast.show("Confirmed retrain failed", "error"));
+              .then((data) => toast.show(`Retrained: ${data.logs_used} logs`, "success"))
+              .catch(() => toast.show("Retrain failed", "error"));
           }}
         >
-          Retrain on Confirmed Logs
+          Retrain on Approved Logs
         </Button>
       </div>
     </div>
