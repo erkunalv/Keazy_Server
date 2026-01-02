@@ -155,17 +155,17 @@ This is your primary endpoint. Send the user's voice/text query along with their
 
 **Request:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `user_id` | string | ✅ | Unique user/device identifier |
-| `query_text` | string | ✅ | Natural language query |
-| `state` | string | ❌ | User's state (e.g., "Uttar Pradesh") |
-| `city` | string | ❌ | User's city (e.g., "Aligarh") |
-| `area` | string | ❌ | User's locality (e.g., "Mangal Vihar") |
-| `lat` | number | ❌ | Latitude from GPS |
-| `lng` | number | ❌ | Longitude from GPS |
-| `radius_km` | number | ❌ | Search radius (default: 10km) |
-| `urgency` | string | ❌ | "low", "normal", "high" |
+| Parameter | Type | Mandatory | Description |
+|-----------|------|-----------|-------------|
+| `user_id` | string |  ✅ | Unique user/device identifier |
+| `query_text` | string |  ✅ | Natural language query |
+| `state` | string |  ❌ | User's state (e.g., "Uttar Pradesh") |
+| `city` | string |  ❌ | User's city (e.g., "Aligarh") |
+| `area` | string |  ❌ | User's locality (e.g., "Mangal Vihar") |
+| `lat` | number |  ❌ | Latitude from GPS |
+| `lng` | number |  ❌ | Longitude from GPS |
+| `radius_km` | number |  ❌ | Search radius (default: 10km) |
+| `urgency` | string |  ❌ | "low", "normal", "high" |
 
 **Example Request:**
 
