@@ -6,6 +6,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { connectMongo, closeMongo } = require('./utils');
 const Service = require('../models/service');
 const Provider = require('../models/provider');
 const Slot = require('../models/slot');

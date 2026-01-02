@@ -18,7 +18,7 @@ try:
     print(f"📍 Connecting to MongoDB at {MONGO_URI}", flush=True)
     client = MongoClient(MONGO_URI)
     db = client["keazy"]
-    query_logs_col = db["query_logs"]
+    query_logs_col = db["queries"]  # Mongoose auto-pluralizes Query model to 'queries'
     corrections_col = db["corrections"]
 
     # 🔹 Fetch approved logs for training
@@ -27,7 +27,7 @@ try:
         {"_id": 0, "query_text": 1, "normalized_service": 1, "assigned_service": 1, "urgency": 1}
     ))
 
-    print(f"📊 Found {len(docs)} approved documents in query_logs", flush=True)
+    print(f"📊 Found {len(docs)} approved documents in queries collection", flush=True)
 
     # 🔹 Fetch corrections (user-corrected predictions)
     corrections = list(corrections_col.find(
@@ -99,7 +99,7 @@ try:
     # 🔹 Train logistic regression on all labeled data
     print("🔧 Transforming features...", flush=True)
     X_transformed = combined_features.fit_transform(X)
-    print(f"✍️ Training model on {len(X_transformed)} samples...", flush=True)
+    print(f"✍️ Training model on {X_transformed.shape[0]} samples...", flush=True)
     pipeline = LogisticRegression(max_iter=1000)
     pipeline.fit(X_transformed, y)
 

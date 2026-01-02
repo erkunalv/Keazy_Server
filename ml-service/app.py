@@ -230,7 +230,7 @@ def retrain():
     
     Training Flow:
         1. Count approved logs in 'queries' collection
-        2. If count > 0, import and execute train_model_v2
+        2. If count > 0, import and execute train_model
         3. Hot-reload model artifacts after training
         4. Return training statistics
     
@@ -275,8 +275,8 @@ def retrain():
             return jsonify({"error": "No approved logs to train on", "approved_count": 0}), 400
         
         # Execute training script (saves new artifacts)
-        print("📥 Importing train_model_v2 module...", flush=True)
-        import train_model_v2
+        print("📥 Importing train_model module...", flush=True)
+        import train_model
         
         # Hot-reload newly trained model
         print("✅ Training completed, reloading artifacts", flush=True)
@@ -290,7 +290,7 @@ def retrain():
         }), 200
         
     except SystemExit as se:
-        # train_model_v2 may call sys.exit() on validation failures
+        # train_model may call sys.exit() on validation failures
         print(f"⚠️ SystemExit: {str(se)}", flush=True)
         return jsonify({"error": "Training failed", "details": str(se)}), 400
     except Exception as e:

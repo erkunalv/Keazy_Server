@@ -125,8 +125,8 @@ export default function QueryLogsPage() {
   // Mark prediction as correct
   const handleMarkCorrect = async (logId) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE}/dashboard/logs/${logId}/approve`, {
-        method: "POST",
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/dashboard/logs/${logId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ approved_for_training: true }),
       });
@@ -134,6 +134,7 @@ export default function QueryLogsPage() {
       toast.show("✅ Marked as correct", "success");
       refetch();
     } catch (err) {
+      console.error("Mark correct error:", err);
       toast.show("Failed to mark correct", "error");
     }
   };
