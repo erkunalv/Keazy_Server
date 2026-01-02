@@ -9,6 +9,8 @@ import SlotsPage from "./pages/SlotsPage";
 import UsersPage from "./pages/UsersPage";
 import UserQuery from "./pages/UserQuery";
 import RetrainPage from "./pages/RetrainPage";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import ProvidersPage from "./pages/ProvidersPage";
 
 export default function App() {
   return (
@@ -23,6 +25,8 @@ export default function App() {
         <Route path="/slots" element={<SlotsPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/query" element={<UserQuery />} />
+        <Route path="/providers" element={<ProvidersPage />} />
+        <Route path="/analytics" element={<AnalyticsDashboard />} />
       </Route>
     </Routes>
   );

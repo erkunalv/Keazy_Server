@@ -1,20 +1,23 @@
 /**
- * @fileoverview PredictPage - Query Testing & Booking Interface
+ * @fileoverview PredictPage - Voice Query Simulator with Geo-based Search
  * 
- * This page allows testing the query processing pipeline with:
+ * Production-ready query testing interface that simulates how a mobile app
+ * would send location-aware voice queries. Features:
+ * 
  * - Natural language query input (simulating voice input)
- * - City and urgency selection
+ * - Interactive map-based location picker
+ * - Hierarchical geo search (state → city → radius)
  * - Auto-generated user ID tracking
- * - Service detection results display
- * - Provider business cards with ratings/availability
+ * - Service detection results with distance display
+ * - Provider business cards with ratings/availability/distance
  * - Slot booking with confirmation dialog
  * 
  * Flow:
- * 1. User enters query text → handleSubmit() → POST /query
- * 2. Results displayed as business cards with clickable slots
- * 3. User clicks slot → opens booking dialog
- * 4. Confirm → handleBookSlot() → POST /query/book
- * 5. Slot removed from results, added to "Your Bookings"
+ * 1. User selects location on map → sets lat/lng/state/city
+ * 2. User enters query text → handleSubmit() → POST /query with geo params
+ * 3. Results displayed as business cards with distance info
+ * 4. User clicks slot → opens booking dialog
+ * 5. Confirm → handleBookSlot() → POST /query/book
  * 
  * @module pages/PredictPage
  */
@@ -42,6 +45,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import { useToast } from "../providers/ToastProvider";
+import LocationPicker from "../components/LocationPicker";
 
 export default function PredictPage() {
   // ============================================================================
@@ -54,8 +58,15 @@ export default function PredictPage() {
   /** @state {string} urgency - Query urgency level: "low" | "normal" | "high" */
   const [urgency, setUrgency] = useState("normal");
   
-  /** @state {string} city - Target city for provider matching */
-  const [city, setCity] = useState("Aligarh");
+  /** @state {Object} userLocation - Location data from LocationPicker */
+  const [userLocation, setUserLocation] = useState({
+    lat: 27.8974,
+    lng: 78.0880,
+    state: 'Uttar Pradesh',
+    city: 'Aligarh',
+    area: 'Mangal Vihar',
+    radius_km: 10
+  });
   
   /** @state {string} userId - Auto-generated user identifier */
   const [userId, setUserId] = useState("user-" + Math.random().toString(36).substr(2, 9));
@@ -85,11 +96,18 @@ export default function PredictPage() {
   // ============================================================================
 
   /**
-   * Submits query to backend for service detection and provider matching.
+   * Handles location change from LocationPicker
+   */
+  const handleLocationChange = (locationData) => {
+    setUserLocation(locationData);
+  };
+
+  /**
+   * Submits query to backend with full geo parameters.
    * 
    * API Call: POST /query
-   * Request: { query_text, urgency, user_id, city }
-   * Response: { query, business_cards, meta }
+   * Request: { query_text, urgency, user_id, state, city, lat, lng, radius_km }
+   * Response: { query, location, business_cards, meta }
    * 
    * @async
    * @returns {void}
@@ -105,15 +123,27 @@ export default function PredictPage() {
       setError(null);
       setResult(null);
 
+      // Build request with full geo parameters
+      const requestBody = {
+        query_text: queryText,
+        urgency: urgency,
+        user_id: userId,
+        // Hierarchical location params
+        state: userLocation.state || null,
+        city: userLocation.city || null,
+        area: userLocation.area || null,
+        // Geo coordinates
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        radius_km: userLocation.radius_km
+      };
+
+      console.log('📤 Sending query with location:', requestBody);
+
       const response = await fetch(`${import.meta.env.VITE_API_BASE}/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query_text: queryText,
-          urgency: urgency,
-          user_id: userId,
-          city: city,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -122,7 +152,10 @@ export default function PredictPage() {
 
       const data = await response.json();
       setResult(data);
-      toast.show("Query processed successfully", "success");
+      
+      // Show success with search method info
+      const searchMethod = data.location?.search_method || 'standard';
+      toast.show(`Query processed (${searchMethod} search)`, "success");
     } catch (err) {
       console.error("Query error:", err);
       setError(err.message);
@@ -212,7 +245,7 @@ export default function PredictPage() {
       </Typography>
 
       {/* -------------------------------------------------------------------- */}
-      {/* INPUT SECTION - Query text, city, urgency, user ID selection */}
+      {/* INPUT SECTION - Query text, location, urgency, user ID selection */}
       {/* -------------------------------------------------------------------- */}
       <Paper sx={{ padding: 3, marginBottom: 3 }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -228,22 +261,16 @@ export default function PredictPage() {
             disabled={loading}
           />
 
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 2 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>City</InputLabel>
-              <Select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                label="City"
-                disabled={loading}
-              >
-                <MenuItem value="Aligarh">Aligarh</MenuItem>
-                <MenuItem value="Delhi">Delhi</MenuItem>
-                <MenuItem value="Lucknow">Lucknow</MenuItem>
-                <MenuItem value="">Any City</MenuItem>
-              </Select>
-            </FormControl>
+          {/* Location Picker - Map-based location selection */}
+          <LocationPicker 
+            onLocationChange={handleLocationChange}
+            initialLocation={userLocation}
+            showRadius={true}
+            compact={false}
+          />
 
+          {/* Controls Row */}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr", gap: 2 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Urgency</InputLabel>
               <Select
@@ -274,6 +301,7 @@ export default function PredictPage() {
                 onClick={handleSubmit}
                 disabled={loading || !queryText.trim()}
                 fullWidth
+                sx={{ py: 1.5 }}
               >
                 {loading ? <CircularProgress size={24} /> : "🔍 Find Services"}
               </Button>
@@ -285,6 +313,50 @@ export default function PredictPage() {
                 Clear
               </Button>
             </Box>
+          </Box>
+
+          {/* Location Summary */}
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            flexWrap: 'wrap', 
+            alignItems: 'center',
+            p: 1.5,
+            bgcolor: 'action.hover',
+            borderRadius: 1
+          }}>
+            <Typography variant="body2" color="textSecondary">
+              📍 Search Location:
+            </Typography>
+            <Chip 
+              size="small" 
+              label={userLocation.state || 'No State'} 
+              color={userLocation.state ? 'primary' : 'default'}
+              variant="outlined"
+            />
+            <Chip 
+              size="small" 
+              label={userLocation.city || 'No City'} 
+              color={userLocation.city ? 'primary' : 'default'}
+              variant="outlined"
+            />
+            {userLocation.area && (
+              <Chip 
+                size="small" 
+                label={userLocation.area} 
+                color="secondary"
+                variant="outlined"
+              />
+            )}
+            <Chip 
+              size="small" 
+              label={`${userLocation.radius_km} km radius`} 
+              color="info"
+              variant="filled"
+            />
+            <Typography variant="caption" color="textSecondary" sx={{ ml: 'auto' }}>
+              [{userLocation.lat?.toFixed(4)}, {userLocation.lng?.toFixed(4)}]
+            </Typography>
           </Box>
         </Box>
       </Paper>
@@ -338,6 +410,42 @@ export default function PredictPage() {
                 />
               </Box>
 
+              {/* Location Search Info */}
+              {result.location && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1, 
+                  flexWrap: 'wrap', 
+                  alignItems: 'center',
+                  p: 1.5,
+                  mb: 2,
+                  bgcolor: result.location.search_method === 'geo' ? 'success.light' : 'info.light',
+                  borderRadius: 1,
+                  color: 'common.white'
+                }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    🔍 Search Method:
+                  </Typography>
+                  <Chip 
+                    size="small" 
+                    label={result.location.search_method?.toUpperCase() || 'STANDARD'} 
+                    color={result.location.search_method === 'geo' ? 'success' : 'info'}
+                    sx={{ fontWeight: 'bold' }}
+                  />
+                  {result.location.state && (
+                    <Chip size="small" label={`State: ${result.location.state}`} variant="outlined" sx={{ bgcolor: 'white' }} />
+                  )}
+                  {result.location.city && (
+                    <Chip size="small" label={`City: ${result.location.city}`} variant="outlined" sx={{ bgcolor: 'white' }} />
+                  )}
+                  {result.location.geo && (
+                    <Typography variant="caption" sx={{ ml: 'auto', opacity: 0.9 }}>
+                      Searched within {result.location.geo.radius_km || 10}km of [{result.location.geo.lat?.toFixed(4)}, {result.location.geo.lng?.toFixed(4)}]
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
               <Divider sx={{ marginBottom: 3 }} />
 
               {/* ---------------------------------------------------------------- */}
@@ -357,9 +465,21 @@ export default function PredictPage() {
                       <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                         {card.name}
                       </Typography>
-                      {card.verified && (
-                        <Chip label="✓ Verified" size="small" color="success" />
-                      )}
+                      <Box sx={{ display: 'flex', gap: 0.5, flexDirection: 'column', alignItems: 'flex-end' }}>
+                        {card.verified && (
+                          <Chip label="✓ Verified" size="small" color="success" />
+                        )}
+                        {/* Distance Badge - Show if geo search */}
+                        {card.distance_km !== undefined && (
+                          <Chip 
+                            label={`📍 ${card.distance_km < 1 ? `${Math.round(card.distance_km * 1000)}m` : `${card.distance_km.toFixed(1)}km`}`} 
+                            size="small" 
+                            color="info" 
+                            variant="outlined"
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                        )}
+                      </Box>
                     </Box>
                     
                     {/* Service & Rating */}
@@ -378,6 +498,7 @@ export default function PredictPage() {
                     {/* Location */}
                     <Typography variant="body2" color="textSecondary">
                       📍 {card.location?.area}, {card.location?.city}
+                      {card.location?.state && `, ${card.location.state}`}
                     </Typography>
 
                     {/* Stats Row */}

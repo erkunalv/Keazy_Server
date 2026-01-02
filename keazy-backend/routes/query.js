@@ -4,7 +4,7 @@
  * This module handles the core query processing pipeline:
  * 1. User tracking and auto-creation
  * 2. Two-phase service detection (rule-based + ML fallback)
- * 3. Provider matching by service and location
+ * 3. Hierarchical provider matching (state → city → geolocation radius)
  * 4. Slot aggregation per provider
  * 5. Booking and cancellation operations
  * 
@@ -16,6 +16,7 @@ const router = express.Router();
 const { normalizeService } = require("../services/entities");
 const { detectUrgency } = require("../services/urgency");
 const { getIntentPrediction } = require("../services/intentModel");
+const { matchProviders } = require("../services/matcher");
 const Query = require("../models/query");
 const Provider = require("../models/provider");
 const Slot = require("../models/slot");
@@ -33,7 +34,9 @@ const logger = require("../utils/logger"); // Winston logger
  * @param {string} providers[].service - Service type (e.g., "electrician")
  * @param {string} providers[].contact - Phone number
  * @param {string} providers[].city - City location
+ * @param {string} providers[].state - State location
  * @param {number} providers[].rating - Rating (0-5)
+ * @param {number} [providers[].distance_m] - Distance in meters (from geo search)
  * @returns {Promise<Array<Object>>} Array of business cards with embedded slots
  * 
  * @example
@@ -41,6 +44,7 @@ const logger = require("../utils/logger"); // Winston logger
  * // [{
  * //   provider_id: "P001",
  * //   name: "ABC Electric",
+ * //   distance_km: 2.5,
  * //   next_available_slots: [{ slot_id: "...", date: "2026-01-01", time: "09:00" }]
  * // }]
  */
@@ -62,7 +66,8 @@ async function buildBusinessCards(providers) {
     .limit(5)  // Max 5 slots per provider
     .lean();
 
-    cards.push({
+    // Build card object
+    const card = {
       // Provider identification
       provider_id: provider.provider_id,
       name: provider.name,
@@ -70,6 +75,7 @@ async function buildBusinessCards(providers) {
       contact: provider.contact,
       location: {
         city: provider.city,
+        state: provider.state,
         area: provider.area
       },
       // Credibility and availability signals for ranking UI
@@ -85,7 +91,14 @@ async function buildBusinessCards(providers) {
         time: s.time,
         duration_min: s.duration_min
       }))
-    });
+    };
+
+    // Add distance if available (from geo search)
+    if (provider.distance_m !== undefined) {
+      card.distance_km = Math.round(provider.distance_m / 10) / 100; // Convert to km with 2 decimals
+    }
+
+    cards.push(card);
   }
   
   return cards;
@@ -99,7 +112,7 @@ async function buildBusinessCards(providers) {
  * 2. Track user via upsert (auto-create if new)
  * 3. Rule-based service matching (DB synonyms with 5-min cache)
  * 4. ML fallback if rules fail (TF-IDF + LogisticRegression)
- * 5. Provider lookup by service + location (with city fallback)
+ * 5. Provider lookup using hierarchical geo search (state → city → radius)
  * 6. Slot aggregation for each provider
  * 7. Log query with latency metrics
  * 
@@ -107,8 +120,13 @@ async function buildBusinessCards(providers) {
  * @param {Object} req.body - Request body
  * @param {string} req.body.user_id - Unique user identifier (required)
  * @param {string} req.body.query_text - Natural language query (required)
+ * @param {string} [req.body.state] - User's state for provider matching
  * @param {string} [req.body.city] - User's city for provider matching
  * @param {string} [req.body.location] - Alias for city field
+ * @param {string} [req.body.area] - User's area for scoring bonus
+ * @param {number} [req.body.lat] - User's latitude for geo search
+ * @param {number} [req.body.lng] - User's longitude for geo search
+ * @param {number} [req.body.radius_km] - Search radius in km (default: 10)
  * @returns {Object} 200 - Query result with business cards
  * @returns {Object} 400 - Missing required fields
  * @returns {Object} 500 - Server error
@@ -119,7 +137,7 @@ router.post("/", async (req, res) => {
   try {
     logger.info("Incoming /query request", { body: req.body });
 
-    const { user_id, query_text, location, city } = req.body;
+    const { user_id, query_text, location, city, state, area, lat, lng, radius_km } = req.body;
     const userCity = city || location; // Support both field names for compatibility
     
     // Validate required fields
@@ -177,33 +195,74 @@ router.post("/", async (req, res) => {
     }
 
     // ------------------------------------------------------------------
-    // STEP 4: Provider Matching
-    // Query providers by detected service, optionally filtered by city
-    // Sort by: availability (now), rating (desc), response time (asc)
-    // Falls back to all locations if no providers found in user's city
+    // STEP 4: Provider Matching (Hierarchical Geo Search)
+    // Filters providers using: State → City → Geolocation Radius
+    // Ranks by: distance (if geo) + rating + availability + verification
+    // Falls back to broader search if no providers found
     // ------------------------------------------------------------------
-    logger.info("Step 3: Looking up providers", { service, city: userCity });
+    logger.info("Step 3: Looking up providers", { 
+      service, 
+      state, 
+      city: userCity, 
+      area,
+      geo: lat && lng ? { lat, lng, radius_km } : null 
+    });
     
-    let providerQuery = { service };
-    if (userCity) {
-      providerQuery.city = { $regex: new RegExp(userCity, 'i') };  // Case-insensitive match
+    // Build geo params if coordinates provided
+    const geoParams = (lat && lng) ? { lat, lng, radiusKm: radius_km || 10 } : null;
+    
+    // Use hierarchical matcher
+    let matchResult = await matchProviders({
+      intent: service,
+      state,
+      city: userCity,
+      area,
+      geo: geoParams,
+      limit: 5
+    });
+    
+    let providers = matchResult.providers;
+    let searchMethod = matchResult.searchMethod;
+    
+    // Fallback: If no providers found with filters, broaden search
+    if (providers.length === 0) {
+      logger.info("No providers with filters, broadening search");
+      
+      // Try without geo first
+      if (geoParams) {
+        matchResult = await matchProviders({
+          intent: service,
+          state,
+          city: userCity,
+          limit: 5
+        });
+        providers = matchResult.providers;
+        searchMethod = 'fallback-no-geo';
+      }
+      
+      // Try without city
+      if (providers.length === 0 && userCity) {
+        matchResult = await matchProviders({
+          intent: service,
+          state,
+          limit: 5
+        });
+        providers = matchResult.providers;
+        searchMethod = 'fallback-state-only';
+      }
+      
+      // Try service only
+      if (providers.length === 0) {
+        matchResult = await matchProviders({
+          intent: service,
+          limit: 5
+        });
+        providers = matchResult.providers;
+        searchMethod = 'fallback-service-only';
+      }
     }
     
-    let providers = await Provider.find(providerQuery)
-      .sort({ available_now: -1, rating: -1, response_time_min: 1 })
-      .limit(5)
-      .lean();
-    
-    // Fallback: If no providers in specified city, search all locations
-    if (providers.length === 0 && userCity) {
-      logger.info("No providers in city, searching all locations");
-      providers = await Provider.find({ service })
-        .sort({ available_now: -1, rating: -1, response_time_min: 1 })
-        .limit(5)
-        .lean();
-    }
-    
-    logger.info("Providers found", { count: providers.length });
+    logger.info("Providers found", { count: providers.length, searchMethod });
 
     // ------------------------------------------------------------------
     // STEP 5: Slot Aggregation
@@ -246,6 +305,13 @@ router.post("/", async (req, res) => {
         confidence: Math.round(confidence * 100),  // Convert to percentage
         source,  // "rule" or "ml"
         urgency  // "low", "normal", or "high"
+      },
+      location: {
+        state: state || null,
+        city: userCity || null,
+        area: area || null,
+        geo: geoParams ? { lat, lng, radius_km: radius_km || 10 } : null,
+        search_method: searchMethod
       },
       business_cards: businessCards,
       meta: {

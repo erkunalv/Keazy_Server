@@ -115,6 +115,9 @@ app.use("/dashboard", require("./routes/dashboard"));
 // Provider management
 app.use("/providers", require("./routes/providers"));
 
+// Provider ratings
+app.use("/ratings", require("./routes/ratings"));
+
 // Background job management
 app.use("/jobs", require("./routes/jobs"));
 

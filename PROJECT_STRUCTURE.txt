@@ -21,21 +21,39 @@ Project_3/
 ├── keazy-admin/                # React Frontend (Vite + MUI)
 │   ├── src/
 │   │   ├── api/                # API client hooks (React Query)
+│   │   │   ├── dashboard.js    # Dashboard/logs/services API
+│   │   │   └── ratings.js      # ⭐ Rating submission & retrieval API
 │   │   ├── components/         # Reusable UI components
+│   │   │   ├── DashboardLayout.jsx
+│   │   │   ├── RatingDialog.jsx    # ⭐ Star rating modal component
+│   │   │   └── LocationPicker.jsx  # 🗺️ Interactive map for geo search
 │   │   ├── pages/              # Route pages
+│   │   │   ├── AnalyticsDashboard.jsx # Charts + Provider Ratings
+│   │   │   ├── DashboardPage.jsx
+│   │   │   ├── ProvidersPage.jsx      # ⭐ Provider management page
+│   │   │   └── ...
 │   │   └── providers/          # Context providers (Toast, Auth)
 │   └── vite.config.js
 │
 ├── keazy-backend/              # Node.js/Express API Server
 │   ├── routes/                 # API endpoints
 │   │   ├── query.js            # Main query processing pipeline
-│   │   └── dashboard.js        # Admin CRUD operations
+│   │   ├── dashboard.js        # Admin CRUD + analytics operations
+│   │   ├── providers.js        # ⭐ Provider registration & listing
+│   │   └── ratings.js          # ⭐ Rating submission & stats
 │   ├── services/               # Business logic
 │   │   ├── entities.js         # Rule-based service matching
 │   │   ├── intentModel.js      # ML service client
 │   │   └── urgency.js          # Urgency detection
 │   ├── models/                 # Mongoose schemas
+│   │   ├── provider.js
+│   │   ├── rating.js           # ⭐ Rating schema
+│   │   ├── slot.js
+│   │   ├── user.js
+│   │   └── ...
 │   ├── seed/                   # Database seed scripts
+│   ├── simulators/             # ⭐ Test data generators
+│   │   └── providerRegistrationSimulator.js
 │   └── entities/
 │       └── synonyms.json       # Fallback keyword mappings
 │
@@ -48,40 +66,40 @@ Project_3/
 
 
 ================================================================================
-                           SYSTEM ARCHITECTURE
+                            SYSTEM ARCHITECTURE          
 ================================================================================
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              EXTERNAL CLIENT                                 │
-│                    (Mobile App / Web App / Voice Interface)                  │
+│                              EXTERNAL CLIENT                                │
+│                    (Mobile App / Web App / Voice Interface)                 │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       │ POST /query
                                       │ { query_text, user_id, city }
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           KEAZY BACKEND (Node.js)                            │
-│                              Port: 3000                                      │
+│                           KEAZY BACKEND (Node.js)                           │
+│                              Port: 3000                                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
-│  │   Query      │───▶│   Service    │───▶│   Provider   │                  │
-│  │   Router     │    │   Matcher    │    │   Matcher    │                  │
-│  └──────────────┘    └──────────────┘    └──────────────┘                  │
-│         │                   │                   │                           │
-│         │            ┌──────┴──────┐            │                           │
-│         │            ▼             ▼            │                           │
-│         │     ┌──────────┐  ┌──────────┐       │                           │
-│         │     │  Rule    │  │   ML     │       │                           │
-│         │     │  Engine  │  │ Fallback │       │                           │
-│         │     │(synonyms)│  │ (HTTP)   │       │                           │
-│         │     └──────────┘  └────┬─────┘       │                           │
-│         │                        │              │                           │
-│         ▼                        ▼              ▼                           │
-│  ┌──────────────────────────────────────────────────────┐                  │
-│  │                    MongoDB Driver                     │                  │
-│  │         (Users, Queries, Providers, Slots)           │                  │
-│  └──────────────────────────────────────────────────────┘                  │
+│      ┌──────────────┐    ┌──────────────┐    ┌──────────────┐               │
+│      │   Query       ───▶   Service     ───▶    Provider   │               │
+│      │   Router     │    │   Matcher    │    │   Matcher    │               │
+│      └──────────────┘    └──────────────┘    └──────────────┘               │
+│             │                   │                    │                      │
+│             │            ┌──────┴──────┐             │                      │
+│             │            ▼             ▼             │                      │
+│             │       ┌──────────┐  ┌──────────┐       │                      │
+│             │       │  Rule    │  │   ML     │       │                      │
+│             │       │  Engine  │  │ Fallback │       │                      │
+│             │       │(synonyms)│  │ (HTTP)   │       │                      │
+│             │       └──────────┘  └────┬─────┘       │                      │
+│             │                          │             │                      │
+│             ▼                          ▼             ▼                      │
+│       ┌──────────────────────────────────────────────────────┐              │
+│       │                    MongoDB Driver                    │              │
+│       │         (Users, Queries, Providers, Slots)           │              │
+│       └──────────────────────────────────────────────────────┘              │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
@@ -89,8 +107,8 @@ Project_3/
                     │                                   │
                     ▼                                   ▼
 ┌───────────────────────────────────┐     ┌───────────────────────────────┐
-│      ML SERVICE (Python)           │     │         MONGODB               │
-│          Port: 5000                │     │        Port: 27017            │
+│      ML SERVICE (Python)          │     │         MONGODB               │
+│          Port: 5000               │     │        Port: 27017            │
 ├───────────────────────────────────┤     ├───────────────────────────────┤
 │                                   │     │                               │
 │  ┌─────────────────────────────┐  │     │  Collections:                 │
@@ -116,7 +134,15 @@ Project_3/
                           QUERY PROCESSING PIPELINE
 ================================================================================
 
-Input: { query_text: "fix my fan urgently", user_id: "usr123", city: "Delhi" }
+Input: { 
+  query_text: "fix my fan urgently", 
+  user_id: "usr123", 
+  state: "Delhi",           // Optional: State filter
+  city: "Delhi",            // Optional: City filter
+  lat: 28.6315,             // Optional: Latitude for geo search
+  lng: 77.2197,             // Optional: Longitude for geo search
+  radius_km: 10             // Optional: Search radius (default: 10km)
+}
 
 Step 1: USER TRACKING
 ├── Upsert user in DB (auto-create if new)
@@ -137,11 +163,26 @@ Step 2: SERVICE DETECTION (Two-Phase)
     ├── Returns predicted_service + confidence
     └── Source: "ml"
 
-Step 3: PROVIDER MATCHING
-├── Query: { service: "electrician", city: /Delhi/i }
-├── Sort by: available_now DESC, rating DESC, response_time ASC
-├── Limit: 5 providers
-└── Fallback: If no city match, search all locations
+Step 3: PROVIDER MATCHING (⭐ Hierarchical Geo Search)
+│
+├── Level 1: STATE Filter (if provided)
+│   └── filter.state = /^Delhi$/i
+│
+├── Level 2: CITY Filter (if provided)
+│   └── filter.city = /^Delhi$/i
+│
+├── Level 3: GEOLOCATION Radius (if lat/lng provided)
+│   ├── Uses MongoDB $geoNear aggregation
+│   ├── Searches within radius_km from [lng, lat]
+│   ├── Returns distance_m and distance_km per provider
+│   └── Sorts by distance (closest first)
+│
+├── Scoring: verified + rating + jobs_completed + available_now + distance
+│
+└── Fallback Chain:
+    ├── 1st: Remove geo filter, keep state + city
+    ├── 2nd: Remove city filter, keep state
+    └── 3rd: Service only (all locations)
 
 Step 4: SLOT AGGREGATION
 ├── For each provider, fetch available slots
@@ -150,7 +191,7 @@ Step 4: SLOT AGGREGATION
 └── Limit: 5 slots per provider
 
 Step 5: RESPONSE CONSTRUCTION
-├── Build "business cards" with provider + slots
+├── Build "business cards" with provider + slots + distance
 ├── Log query to DB with latency_ms
 └── Return structured JSON response
 
@@ -163,11 +204,18 @@ Output:
     "source": "rule",
     "urgency": "high"
   },
+  "location": {
+    "state": "Delhi",
+    "city": "Delhi",
+    "geo": { "lat": 28.6315, "lng": 77.2197, "radius_km": 10 },
+    "search_method": "geo"  // "geo" | "standard" | "fallback-*"
+  },
   "business_cards": [
     {
       "name": "Brilliant Electrician",
       "contact": "9876543217",
       "rating": 4.6,
+      "distance_km": 2.5,
       "next_available_slots": [
         { "slot_id": "...", "date": "2026-01-01", "time": "09:00" }
       ]
@@ -190,23 +238,23 @@ Output:
     │                     │── upsert user ─────────────────────────▶│
     │                     │◀─────── user doc ───────────────────────│
     │                     │                      │                   │
-    │                     │── rule match ───────▶│                   │
+    │                     │── rule match ──────▶│                   │
     │                     │   (cache/DB)         │                   │
     │                     │◀── service ─────────│                   │
     │                     │                      │                   │
     │                     │   [if no rule match] │                   │
-    │                     │───── /predict ──────▶│                   │
+    │                     │───── /predict ──────▶│                  │
     │                     │◀── prediction ──────│                   │
     │                     │                      │                   │
-    │                     │── find providers ───────────────────────▶│
+    │                     │── find providers ──────────────────────▶│
     │                     │◀─────── providers ──────────────────────│
     │                     │                      │                   │
-    │                     │── find slots ───────────────────────────▶│
+    │                     │── find slots ──────────────────────────▶│
     │                     │◀─────── slots ──────────────────────────│
     │                     │                      │                   │
-    │                     │── log query ────────────────────────────▶│
+    │                     │── log query ───────────────────────────▶│
     │                     │                      │                   │
-    │◀── business cards ──│                      │                   │
+    │◀── business cards ──│                     │                   │
 
 
 2. BOOKING FLOW (Slot Selection → Confirmation)
@@ -253,6 +301,69 @@ Output:
     │◀── retrain result ──│                      │                   │
 
 
+4. PROVIDER REGISTRATION FLOW (Admin → Database)
+────────────────────────────────────────────────
+
+  Admin UI              Backend                          MongoDB
+    │                     │                                 │
+    │─ POST /providers   ▶│                                 │
+    │   /register         │                                 │
+    │   { name, service,  │                                 │
+    │     contact, slots, │                                 │
+    │     voice_intro }   │                                 │
+    │                     │── validate required ───────────▶│
+    │                     │   fields (name,service,contact) │
+    │                     │                                 │
+    │                     │── create provider ─────────────▶│
+    │                     │◀─────── provider doc ──────────│
+    │                     │                                 │
+    │◀── provider_id ────│                                 │
+
+  Simulator Flow (for testing):
+    │                     │                                 │
+    │─ POST /providers   ▶│                                 │
+    │   /simulate?count=5 │                                 │
+    │                     │── generate random providers ───▶│
+    │                     │   (names, services, contacts)   │
+    │                     │◀─────── created providers ─────│
+    │◀── provider list ──│                                 │
+
+
+5. RATING SUBMISSION FLOW (User → Provider Stats Update)
+────────────────────────────────────────────────────────
+
+  Admin UI              Backend                          MongoDB
+    │                     │                                 │
+    │─ POST /ratings/add ▶│                                 │
+    │   { booking_id,     │                                 │
+    │     provider_id,    │                                 │
+    │     rating: 1-5,    │                                 │
+    │     comment }       │                                 │
+    │                     │── validate rating (1-5) ───────▶│
+    │                     │                                 │
+    │                     │── save rating ─────────────────▶│
+    │                     │◀─────── rating doc ────────────│
+    │                     │                                 │
+    │                     │── calculate avg rating ────────▶│
+    │                     │   (aggregate all provider       │
+    │                     │    ratings)                     │
+    │                     │                                 │
+    │                     │── update provider.rating ──────▶│
+    │                     │◀─────── updated provider ──────│
+    │                     │                                 │
+    │◀── rating + stats ─│                                 │
+
+  Get Ratings with Stats:
+    │                     │                                 │
+    │─ GET /ratings/     ▶│                                 │
+    │   provider/:id      │                                 │
+    │                     │── aggregate ratings ───────────▶│
+    │                     │   { avg, distribution,          │
+    │                     │     count, paginated list }     │
+    │                     │◀─────── stats + ratings ───────│
+    │◀── stats response ─│                                 │
+
+
 ================================================================================
                            DATABASE SCHEMA
 ================================================================================
@@ -292,13 +403,31 @@ PROVIDERS COLLECTION
   service: String (indexed),        // Links to service.name
   contact: String,
   hourly_rate: Number,
-  city: String (indexed),
-  area: String,
+  
+  // ⭐ Hierarchical Location Fields
+  state: String (indexed),          // "Uttar Pradesh", "Delhi"
+  city: String (indexed),           // "Aligarh", "Lucknow"
+  area: String,                     // "Mangal Vihar", "Hazratganj"
+  district: String,
+  pincode: String,
+  
+  // ⭐ GeoJSON Location for Radius Search
+  location: {
+    type: String ('Point'),
+    coordinates: [Number, Number]   // [longitude, latitude]
+  },
+  geo_accuracy_m: Number,           // GPS accuracy in meters
+  
   rating: Number,
   verified: Boolean,
   available_now: Boolean,
-  response_time_min: Number
+  response_time_min: Number,
+  jobs_completed_30d: Number
 }
+
+// Indexes for geo search:
+// - { service: 1, city: 1, area: 1 }
+// - { location: '2dsphere' } (sparse)
 
 SLOTS COLLECTION
 ────────────────
@@ -332,6 +461,16 @@ QUERIES COLLECTION (Logs)
   timestamp: Date
 }
 
+RATINGS COLLECTION
+──────────────────
+{
+  booking_id: String,               // Reference to booking/slot
+  provider_id: ObjectId (ref: Provider, indexed),
+  rating: Number (1-5, required),   // Star rating
+  comment: String,                  // Optional feedback
+  created_at: Date (indexed)        // Auto-timestamped
+}
+
 
 ================================================================================
                          API ENDPOINTS REFERENCE
@@ -339,11 +478,33 @@ QUERIES COLLECTION (Logs)
 
 QUERY ROUTES (/query)
 ─────────────────────
-POST /query              Main query processing pipeline
+POST /query              Main query processing pipeline (supports geo params)
 POST /query/book         Book a slot
 POST /query/cancel       Cancel a booking
 GET  /query/bookings/:id Get user's bookings
 POST /query/feedback     Submit feedback on prediction
+
+PROVIDER ROUTES (/providers)
+────────────────────────────
+POST /providers/register  Register new provider with geo (name, service, contact + lat/lng)
+GET  /providers           List providers (paginated: ?page=1&limit=10)
+GET  /providers/:id       Get provider by ID with full profile
+
+⭐ GEO SEARCH ROUTES (/providers)
+─────────────────────────────────
+GET  /providers/nearby    Find nearby providers with distance calculation
+                          Params: lat, lng (required), radius_km, service, state, city, limit
+                          Returns: providers sorted by distance with distance_m, distance_km
+                          Example: /providers/nearby?lat=27.8974&lng=78.0880&radius_km=5&service=electrician
+
+GET  /providers/near      Simple $near search (legacy)
+                          Params: service, lat, lng (required), maxKm, limit
+                          Example: /providers/near?service=plumber&lat=26.8467&lng=80.9462&maxKm=10
+
+RATING ROUTES (/ratings)
+────────────────────────
+POST /ratings/add                 Submit rating (booking_id, provider_id, rating 1-5, comment)
+GET  /ratings/provider/:id        Get provider ratings with stats (avg, distribution)
 
 DASHBOARD ROUTES (/dashboard)
 ─────────────────────────────
@@ -360,6 +521,13 @@ GET  /dashboard/retrain/history   Retrain history
 GET  /dashboard/model/status      Current model status
 POST /dashboard/logs/:id/approve  Approve log for training
 POST /dashboard/logs/:id/assign   Correct service assignment
+
+ANALYTICS ROUTES (/dashboard/analytics)
+───────────────────────────────────────
+GET  /dashboard/analytics/corrections         Service correction stats
+GET  /dashboard/analytics/retrain-impact      Retrain impact metrics
+GET  /dashboard/analytics/provider-performance Provider stats with ratings
+GET  /dashboard/analytics/latency-trends      Query latency trends
 
 ML SERVICE ROUTES (Port 5000)
 ─────────────────────────────
@@ -406,6 +574,17 @@ prometheus      9090    Metrics collection
 loki            3100    Log aggregation
 promtail        -       Log shipper
 
+MongoDB Collections:
+───────────────────────────────────────────────────
+├── users           User profiles & query history
+├── services        Service definitions & synonyms
+├── providers       Provider profiles & ratings
+├── slots           Booking slots
+├── queries         Query logs for ML training
+├── ratings         ⭐ Provider ratings & feedback
+├── ml_logs         ML prediction logs
+└── retrainhistories Model retrain history
+
 
 ================================================================================
                          GIT TRACKING STATUS
@@ -425,6 +604,58 @@ NOT Tracked (see .gitignore): ❌
 - __pycache__/ (Python cache)
 - grafana-data/ (database files)
 - package-lock.json (regenerated)
+
+
+================================================================================
+                         FRONTEND ROUTES (React Router)
+================================================================================
+
+Route                   Component               Description
+───────────────────────────────────────────────────────────────────────────────
+/                       DashboardPage           Main dashboard with query logs
+/analytics              AnalyticsDashboard      Charts: corrections, latency, ratings
+/providers              ProvidersPage           ⭐ Provider list, register, simulate, rate
+/predict                PredictPage             🗺️ Voice Query Simulator with Location Picker
+/services               (via DashboardPage)     Service management with synonyms
+/users                  (planned)               User management
+
+
+================================================================================
+                      LOCATION PICKER COMPONENT (Production-Ready)
+================================================================================
+
+File: keazy-admin/src/components/LocationPicker.jsx
+
+PURPOSE:
+Interactive map-based location selector that simulates how a mobile app would 
+capture user GPS coordinates and send them to the geo search API.
+
+FEATURES:
+- 🗺️ Interactive Leaflet map with click-to-select
+- 📍 8 preset Indian locations for quick testing
+- 🌐 Reverse geocoding via OpenStreetMap Nominatim (free API)
+- 📡 Browser GPS detection ("Use My Location")
+- ✏️ Manual coordinate input with validation
+- 📏 Adjustable search radius slider (1-50km) with visual circle
+- 🔄 Auto-detects state/city from clicked coordinates
+
+PRESET LOCATIONS:
+- Aligarh (AMU Campus, Mangal Vihar)
+- Lucknow (Hazratganj)
+- Delhi (Connaught Place, Karol Bagh)
+- Noida (Sector 62)
+- Agra (Taj Ganj)
+- Gurgaon (DLF)
+
+PROPS:
+  onLocationChange  - Callback: { lat, lng, state, city, area, radius_km }
+  initialLocation   - Optional initial position
+  showRadius        - Show radius circle on map (default: true)
+  compact           - Collapsible mode for smaller screens
+
+DEPENDENCIES:
+  npm install leaflet react-leaflet
+  import 'leaflet/dist/leaflet.css' in main.jsx
 
 
 ================================================================================

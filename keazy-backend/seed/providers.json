@@ -5,8 +5,14 @@
     "service": "electrician",
     "contact": "9876543210",
     "hourly_rate": 300,
+    "state": "Uttar Pradesh",
     "city": "Aligarh",
     "area": "Mangal Vihar",
+    "pincode": "202001",
+    "location": {
+      "type": "Point",
+      "coordinates": [78.0880, 27.8974]
+    },
     "rating": 4.7,
     "verified": true,
     "available_now": true,
@@ -18,8 +24,14 @@
     "service": "plumber",
     "contact": "9876543211",
     "hourly_rate": 250,
+    "state": "Uttar Pradesh",
     "city": "Aligarh",
     "area": "Railway Road",
+    "pincode": "202001",
+    "location": {
+      "type": "Point",
+      "coordinates": [78.0830, 27.8920]
+    },
     "rating": 4.5,
     "verified": true,
     "available_now": true,
@@ -31,8 +43,14 @@
     "service": "tutor",
     "contact": "9876543212",
     "hourly_rate": 500,
+    "state": "Delhi",
     "city": "Delhi",
     "area": "Lajpat Nagar",
+    "pincode": "110024",
+    "location": {
+      "type": "Point",
+      "coordinates": [77.2373, 28.5672]
+    },
     "rating": 4.8,
     "verified": true,
     "available_now": true,
@@ -44,8 +62,14 @@
     "service": "salon",
     "contact": "9876543213",
     "hourly_rate": 400,
+    "state": "Uttar Pradesh",
     "city": "Lucknow",
     "area": "Hazratganj",
+    "pincode": "226001",
+    "location": {
+      "type": "Point",
+      "coordinates": [80.9462, 26.8467]
+    },
     "rating": 4.6,
     "verified": false,
     "available_now": true,
@@ -57,8 +81,14 @@
     "service": "cobbler",
     "contact": "9876543214",
     "hourly_rate": 150,
+    "state": "Uttar Pradesh",
     "city": "Aligarh",
     "area": "Sasni Gate",
+    "pincode": "202001",
+    "location": {
+      "type": "Point",
+      "coordinates": [78.0750, 27.9010]
+    },
     "rating": 4.3,
     "verified": true,
     "available_now": true,
@@ -70,8 +100,14 @@
     "service": "pharmacy",
     "contact": "9876543215",
     "hourly_rate": 0,
+    "state": "Uttar Pradesh",
     "city": "Aligarh",
     "area": "Centre Point",
+    "pincode": "202001",
+    "location": {
+      "type": "Point",
+      "coordinates": [78.0900, 27.8950]
+    },
     "rating": 4.9,
     "verified": true,
     "available_now": true,
@@ -83,8 +119,14 @@
     "service": "tailor",
     "contact": "9876543216",
     "hourly_rate": 200,
+    "state": "Uttar Pradesh",
     "city": "Aligarh",
     "area": "Anoopshahar Road",
+    "pincode": "202001",
+    "location": {
+      "type": "Point",
+      "coordinates": [78.1050, 27.9100]
+    },
     "rating": 4.4,
     "verified": true,
     "available_now": true,
@@ -96,8 +138,14 @@
     "service": "electrician",
     "contact": "9876543217",
     "hourly_rate": 350,
+    "state": "Delhi",
     "city": "Delhi",
     "area": "Karol Bagh",
+    "pincode": "110005",
+    "location": {
+      "type": "Point",
+      "coordinates": [77.1900, 28.6519]
+    },
     "rating": 4.6,
     "verified": true,
     "available_now": true,
@@ -109,8 +157,14 @@
     "service": "plumber",
     "contact": "9876543218",
     "hourly_rate": 280,
+    "state": "Delhi",
     "city": "Delhi",
     "area": "Dwarka",
+    "pincode": "110075",
+    "location": {
+      "type": "Point",
+      "coordinates": [77.0266, 28.5921]
+    },
     "rating": 4.4,
     "verified": true,
     "available_now": false,
@@ -122,8 +176,14 @@
     "service": "tailor",
     "contact": "9876543219",
     "hourly_rate": 250,
+    "state": "Delhi",
     "city": "Delhi",
     "area": "Sarojini Nagar",
+    "pincode": "110023",
+    "location": {
+      "type": "Point",
+      "coordinates": [77.2000, 28.5800]
+    },
     "rating": 4.7,
     "verified": true,
     "available_now": true,
@@ -135,8 +195,14 @@
     "service": "pharmacy",
     "contact": "9876543220",
     "hourly_rate": 0,
+    "state": "Delhi",
     "city": "Delhi",
     "area": "Connaught Place",
+    "pincode": "110001",
+    "location": {
+      "type": "Point",
+      "coordinates": [77.2197, 28.6315]
+    },
     "rating": 4.8,
     "verified": true,
     "available_now": true,
@@ -148,11 +214,93 @@
     "service": "cobbler",
     "contact": "9876543221",
     "hourly_rate": 120,
+    "state": "Delhi",
     "city": "Delhi",
     "area": "Chandni Chowk",
+    "pincode": "110006",
+    "location": {
+      "type": "Point",
+      "coordinates": [77.2300, 28.6560]
+    },
     "rating": 4.5,
     "verified": true,
     "available_now": true,
     "response_time_min": 20
+  },
+  {
+    "provider_id": "P013",
+    "name": "Agra Electricals",
+    "service": "electrician",
+    "contact": "9876543222",
+    "hourly_rate": 280,
+    "state": "Uttar Pradesh",
+    "city": "Agra",
+    "area": "Taj Ganj",
+    "pincode": "282001",
+    "location": {
+      "type": "Point",
+      "coordinates": [78.0421, 27.1767]
+    },
+    "rating": 4.5,
+    "verified": true,
+    "available_now": true,
+    "response_time_min": 35
+  },
+  {
+    "provider_id": "P014",
+    "name": "Lucknow Plumbers Hub",
+    "service": "plumber",
+    "contact": "9876543223",
+    "hourly_rate": 260,
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "area": "Gomti Nagar",
+    "pincode": "226010",
+    "location": {
+      "type": "Point",
+      "coordinates": [81.0065, 26.8508]
+    },
+    "rating": 4.6,
+    "verified": true,
+    "available_now": true,
+    "response_time_min": 40
+  },
+  {
+    "provider_id": "P015",
+    "name": "Noida Quick Electric",
+    "service": "electrician",
+    "contact": "9876543224",
+    "hourly_rate": 400,
+    "state": "Uttar Pradesh",
+    "city": "Noida",
+    "area": "Sector 62",
+    "pincode": "201301",
+    "location": {
+      "type": "Point",
+      "coordinates": [77.3650, 28.6270]
+    },
+    "rating": 4.7,
+    "verified": true,
+    "available_now": true,
+    "response_time_min": 25
+  },
+  {
+    "provider_id": "P016",
+    "name": "Gurgaon Home Services",
+    "service": "plumber",
+    "contact": "9876543225",
+    "hourly_rate": 350,
+    "state": "Haryana",
+    "city": "Gurgaon",
+    "area": "DLF Phase 3",
+    "pincode": "122002",
+    "location": {
+      "type": "Point",
+      "coordinates": [77.0940, 28.4945]
+    },
+    "rating": 4.8,
+    "verified": true,
+    "available_now": true,
+    "response_time_min": 30
   }
 ]
